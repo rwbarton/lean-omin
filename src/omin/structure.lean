@@ -126,6 +126,26 @@ lemma struc.definable_set.inter (S : struc R)
   S.definable_set (s ∩ t) :=
 sorry
 
+lemma struc.definable_set.imp (S : struc R)
+  {X : Type*} [dX : definable S X]
+  {s t : set X} (hs : S.definable_set s) (ht : S.definable_set t) :
+  S.definable_set {x | s x → t x} :=
+sorry
+
+-- TODO: Is this the best way to express this?
+-- Would need to dsimp away function.uncurry afterwards
+-- (or we could just do it in the statement)
+lemma struc.definable_set.forall (S : struc R)
+  {X Y : Type*} [dX : definable S X] [dY : definable S Y]
+  {s : X → Y → Prop} (hs : S.definable_set (function.uncurry s)) :
+  S.definable_set {x | ∀ y, s x y} :=
+sorry
+
+lemma struc.definable_set.eq (S : struc R)
+  {X : Type*} [dX : definable S X] :
+  S.definable_set {p : X × X | p.1 = p.2} :=
+sorry
+
 -- This isn't really important (like `decidable_of_iff` is)
 -- because definability is a Prop and not data;
 -- however it still seems like a useful idiom.
@@ -156,6 +176,20 @@ lemma struc.definable.comp (S : struc R)
   S.definable_fun (λ x, g (f x)) :=
 sorry
 
+lemma struc.definable.preimage (S : struc R)
+  {X : Type*} [dX : definable S X]
+  {Y : Type*} [dY : definable S Y]
+  {f : X → Y} (hf : S.definable_fun f)
+  {s : set Y} (hs : S.definable_set s) :
+  S.definable_set (f ⁻¹' s) :=
+sorry
+
+lemma struc.definable.val (S : struc R) {X : Type*} [dX : definable S X]
+  {s : set X} (hs : S.definable_set s) :
+  by letI := definable.subset S hs; exact
+  S.definable_fun (subtype.val : s → X) :=
+sorry
+
 section prod
 
 variables (S : struc R) {X : Type*} {Y : Type*} [definable S X] [definable S Y]
@@ -166,7 +200,9 @@ sorry
 lemma struc.definable.snd : S.definable_fun (prod.snd : X × Y → Y) :=
 sorry
 
-lemma struc.definable.prod {A : Type*} [dA : definable S A]
+variables {S}
+
+lemma struc.definable_fun.prod {A : Type*} [dA : definable S A]
   {f : A → X} (hf : S.definable_fun f)
   {g : A → Y} (hg : S.definable_fun g) :
   S.definable_fun (λ a, (f a, g a)) :=
@@ -176,6 +212,31 @@ end prod
 
 -- Similarly, prove the universal properties of (finite) Pi, ⊕, (finite) Sigma
 -- with respect to definable functions.
+
+-- TODO: What happens for relations of higher arity?
+-- Would this already magically work?
+lemma struc.definable.binrel (S : struc R)
+  {X : Type*} [dX : definable S X]
+  {Y : Type*} [dY : definable S Y]
+  {Z : Type*} [dZ : definable S Z]
+  {f : X → Y} (hf : S.definable_fun f)
+  {g : X → Z} (hg : S.definable_fun g)
+  {s : Y → Z → Prop} (hs : S.definable_set {p : Y × Z | s p.1 p.2}) :
+  S.definable_set {x | s (f x) (g x)} :=
+struc.definable.preimage S (hf.prod hg) hs
+
+lemma struc.definable_set.eq' (S : struc R)
+  {X : Type*} [dX : definable S X]
+  {Y : Type*} [dY : definable S Y]
+  {f : X → Y} (hf : S.definable_fun f)
+  {g : X → Y} (hg : S.definable_fun g) :
+  S.definable_set {p : X | f p = g p} :=
+-- This works, but we need to supply all the arguments manually
+-- struc.definable.preimage S (hf.prod hg) (struc.definable_set.eq S)
+-- Potential problem: struc.definable.binrel can loop
+-- (and would if apply_rules didn't succeed
+-- in applying struc.definable_set.eq first)
+by apply_rules [struc.definable_set.eq, struc.definable.binrel]
 
 class definable_constants (S : struc R) : Prop :=
 (definable_singleton (r : R) : S.definable_set ({r} : set R))
