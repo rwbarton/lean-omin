@@ -117,7 +117,7 @@ def definable.subset (S : struc R) {X : Type*} [dX : definable S X]
 
 lemma struc.definable_set.compl (S : struc R)
   {X : Type*} [dX : definable S X]
-  {s : set X} (h : S.definable_set s) : S.definable_set (- s) :=
+  {s : set X} (h : S.definable_set s) : S.definable_set sᶜ :=
 sorry
 
 lemma struc.definable_set.inter (S : struc R)
