@@ -184,6 +184,14 @@ lemma struc.definable.preimage (S : struc R)
   S.definable_set (f ⁻¹' s) :=
 sorry
 
+lemma struc.definable.image (S : struc R)
+  {X : Type*} [dX : definable S X]
+  {Y : Type*} [dY : definable S Y]
+  {f : X → Y} (hf : S.definable_fun f)
+  {s : set X} (hs : S.definable_set s) :
+  S.definable_set (f '' s) :=
+sorry
+
 lemma struc.definable.val (S : struc R) {X : Type*} [dX : definable S X]
   {s : set X} (hs : S.definable_set s) :
   by letI := definable.subset S hs; exact
