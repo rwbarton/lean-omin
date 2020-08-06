@@ -8,7 +8,16 @@ lemma finite_of_finite_image_fibers {s : set α} {f : α → β}
   (himg : finite (f '' s))
   (hfib : ∀ b, finite {a ∈ s | f a = b}) :
   finite s :=
-sorry
+begin
+  have : s = ⋃ (b ∈ f '' s), {a ∈ s | f a = b},
+  { ext a,
+    rw mem_bUnion_iff,
+    split,
+    { intro h, exact ⟨f a, mem_image_of_mem _ h, ⟨h, rfl⟩⟩ },
+    { rintro ⟨_, _, ⟨h, _⟩⟩, exact h } },
+  rw this,
+  exact finite.bUnion himg (λ b _, hfib b)
+end
 
 lemma Ioo.infinite [preorder α] [densely_ordered α] {x y : α} (h : x < y) :
   infinite (Ioo x y) :=
