@@ -69,7 +69,7 @@ begin
       intro z,
       convert finite_fibers z,
       ext, simp },
-    have := Ioo.infinite a b,
+    have := Ioo.infinite hab,
     rw [←infinite_coe_iff, ←infinite_univ_iff] at this,
     contradiction },
   have : S.definable_set K := definable_K S a b f hf,
