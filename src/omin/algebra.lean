@@ -18,7 +18,11 @@ lemma definable_set_lt (S : struc R) [has_lt R] [definable_lt S]
   {X : Type*} [definable S X]
   {f : X → R} (hf : S.definable_fun f) {g : X → R} (hg : S.definable_fun g) :
   S.definable_set {x | f x < g x} :=
-sorry
+begin
+  show S.definable_set ((λ x, (f x, g x)) ⁻¹' {p : R × R | p.1 < p.2}),
+  apply struc.definable.preimage _ (hf.prod hg),
+  exact definable_lt.definable_lt
+end
 
 lemma definable_le (S : struc R) [decidable_linear_order R] [definable_lt S] :
   S.definable_set {p : R × R | p.1 ≤ p.2} :=
@@ -34,7 +38,11 @@ lemma definable_set_le (S : struc R) [decidable_linear_order R] [definable_lt S]
   {X : Type*} [definable S X]
   {f : X → R} (hf : S.definable_fun f) {g : X → R} (hg : S.definable_fun g) :
   S.definable_set {x | f x ≤ g x} :=
-sorry
+begin
+  show S.definable_set ((λ x, (f x, g x)) ⁻¹' {p : R × R | p.1 ≤ p.2}),
+  apply struc.definable.preimage _ (hf.prod hg),
+  exact definable_le S
+end
 
 -- TODO: Also want to express "X is a definable set with a definable ordering",
 -- or maybe "X is a definable set with a definable ring structure", etc.
