@@ -1,6 +1,15 @@
 import data.set.finite
+import logic.function.iterate
 
 variables {α : Type*} {β : Type*}
+
+@[simp]
+lemma finset.not_nonempty (s : finset α) :
+  ¬s.nonempty ↔ s = ∅ :=
+begin
+  classical,
+  rw [finset.nonempty_iff_ne_empty, not_not],
+end
 
 namespace set
 
@@ -19,6 +28,24 @@ begin
   exact finite.bUnion himg (λ b _, hfib b)
 end
 
+lemma infinite_of_subset {s₁ s₂ : set α} (h : s₁ ⊆ s₂) (h₁ : s₁.infinite) :
+  s₂.infinite :=
+begin
+  rw ← infinite_coe_iff at h₁ ⊢,
+  resetI,
+  apply infinite.of_injective _ (set.inclusion_injective h),
+end
+
+instance Ioo.densely_ordered [preorder α] [densely_ordered α] (a b : α) :
+  densely_ordered (Ioo a b) :=
+begin
+  constructor,
+  rintros ⟨x, hx⟩ ⟨y, hy⟩ h,
+  change x < y at h,
+  choose z hz using dense h,
+  exact ⟨⟨z, lt_trans hx.1 hz.1, lt_trans hz.2 hy.2⟩, hz.1, hz.2⟩,
+end
+
 lemma Ioo.infinite [preorder α] [densely_ordered α] {x y : α} (h : x < y) :
   infinite (Ioo x y) :=
 begin
@@ -31,5 +58,13 @@ begin
   obtain ⟨z, hz₁, hz₂⟩ : ∃ (z : α), x < z ∧ z < m := dense m.2.1,
   refine hm ⟨z, hz₁, lt_trans hz₂ m.2.2⟩ trivial hz₂
 end
+
+lemma Ico.infinite [preorder α] [densely_ordered α] (a b : α) (h : a < b) :
+  infinite (Ico a b) :=
+set.infinite_of_subset Ioo_subset_Ico_self (Ioo.infinite a b h)
+
+lemma Ioc.infinite [preorder α] [densely_ordered α] (a b : α) (h : a < b) :
+  infinite (Ioc a b) :=
+set.infinite_of_subset Ioo_subset_Ioc_self (Ioo.infinite a b h)
 
 end set
