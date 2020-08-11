@@ -59,12 +59,16 @@ begin
   refine hm ⟨z, hz₁, lt_trans hz₂ m.2.2⟩ trivial hz₂
 end
 
-lemma Ico.infinite [preorder α] [densely_ordered α] (a b : α) (h : a < b) :
+lemma Ico.infinite [preorder α] [densely_ordered α] {a b : α} (h : a < b) :
   infinite (Ico a b) :=
-set.infinite_of_subset Ioo_subset_Ico_self (Ioo.infinite a b h)
+set.infinite_of_subset Ioo_subset_Ico_self (Ioo.infinite h)
 
-lemma Ioc.infinite [preorder α] [densely_ordered α] (a b : α) (h : a < b) :
+lemma Ioc.infinite [preorder α] [densely_ordered α] {a b : α} (h : a < b) :
   infinite (Ioc a b) :=
-set.infinite_of_subset Ioo_subset_Ioc_self (Ioo.infinite a b h)
+set.infinite_of_subset Ioo_subset_Ioc_self (Ioo.infinite h)
+
+lemma Icc.infinite [preorder α] [densely_ordered α] {a b : α} (h : a < b) :
+  infinite (Icc a b) :=
+set.infinite_of_subset Ioo_subset_Icc_self (Ioo.infinite h)
 
 end set
