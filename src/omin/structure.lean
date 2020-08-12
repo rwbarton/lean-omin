@@ -247,6 +247,14 @@ lemma struc.definable_set.eq (S : struc R)
   S.definable_set {p : X × X | p.1 = p.2} :=
 sorry
 
+lemma struc.definable_set.reindex (S : struc R)
+  {X Y : Type*} [dX : definable S X] [dY : definable S Y]
+  {f : X → Y} (hf : is_reindexing S f)
+  {s : set Y} (hs : S.definable_set s) :
+  S.definable_set (f ⁻¹' s) :=
+show S.definable_set {x | f x ∈ s},
+from sorry
+
 -- This isn't really important (like `decidable_of_iff` is)
 -- because definability is a Prop and not data;
 -- however it still seems like a useful idiom.
@@ -279,8 +287,13 @@ begin
   apply S.definable_set_of_iff {p : X × Z | ∃ y, f p.1 = y ∧ g y = p.2},
   { rintro ⟨x, z⟩, simp },
   apply struc.definable_set.exists,
-  apply struc.definable_set.inter;
-  sorry
+  apply struc.definable_set.inter,
+  { have : is_reindexing S (λ p : (X × Z) × Y, (p.1.1, p.2)),
+    { apply_rules [is_reindexing.prod, is_reindexing.fst, is_reindexing.snd, is_reindexing.comp] },
+    exact struc.definable_set.reindex S this hf },
+  { have : is_reindexing S (λ p : (X × Z) × Y, (p.2, p.1.2)),
+    { apply_rules [is_reindexing.prod, is_reindexing.fst, is_reindexing.snd, is_reindexing.comp] },
+    exact struc.definable_set.reindex S this hg },
 end
 
 lemma struc.definable.preimage (S : struc R)
