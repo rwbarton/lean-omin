@@ -25,6 +25,7 @@ such that:
        π : Rⁿ⁺¹ → Rⁿ denotes the projection onto the first n coordinates. -/
 structure struc :=
 -- TODO: "generalize" to Type instead of Prop here?
+-- TODO: Try this idea: (definable : (Σ {n : ℕ}, set (R^n)) → Prop)?
 (definable : Π {n : ℕ} (A : set (R^n)), Prop)
 (definable_empty (n : ℕ) :
   definable (∅ : set (R^n)))
@@ -73,6 +74,7 @@ end
 lemma struc.definable_rn_prod {m n : ℕ} {A : set (R^n)}
   (hA : S.definable A) : S.definable (U m ⊠ A) :=
 begin
+  -- TODO: induction principle for `nat` which uses `m + 1` rather than `nat.succ m`
   induction m with m ih,
   { refine S.convert_definable hA (by apply zero_add) _,
     intro x,
@@ -107,6 +109,7 @@ begin
     refl }
 end
 
+--- [vdD:1.2.2(i)]
 lemma struc.definable_external_prod {n m : ℕ}
   {A : set (R^n)} (hA : S.definable A)
   {B : set (R^m)} (hB : S.definable B) : S.definable (A ⊠ B) :=
@@ -116,6 +119,36 @@ begin
   convert S.definable_inter hA hB,
   ext x,
   simp [finvec.external_prod_def]
+end
+
+private lemma obvious_nat_lemma {n : ℕ} {i j : fin n} (h : i ≤ j) :
+  n = ↑i + (↑j - ↑i + 1 + (n - 1 - ↑j)) :=
+begin
+  cases i with i,
+  cases j with j,
+  change i ≤ j at h,
+  dsimp,
+  omega
+end
+
+--- [vdD:1.2.2(ii)]
+lemma struc.definable_eq {n : ℕ} (i j : fin n) :
+  S.definable {x | x i = x j} :=
+begin
+  wlog h : i ≤ j using i j,
+  swap, { convert this, ext x, apply eq_comm },
+  have : S.definable (U i ⊠ {x : R^((j - i) + 1) | x 0 = x (fin.last _)} ⊠ U (n - 1 - j)),
+  { apply S.definable_rn_prod,
+    apply S.definable_prod_rn,
+    apply S.definable_eq_outer },
+  apply S.convert_definable this (obvious_nat_lemma h),
+  intro x,
+  simp only
+    [finvec.external_prod_def, true_and, and_true, mem_univ, mem_set_of_eq, function.comp_app],
+  rw iff_iff_eq,
+  congr; ext,
+  { simp, refl },
+  { simpa using (nat.add_sub_cancel' h).symm }
 end
 
 end o_minimal
