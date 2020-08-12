@@ -210,6 +210,14 @@ def definable.subset (S : struc R) {X : Type*} [dX : definable S X]
 -- & prove it has the expected universal property,
 -- once we have definable functions
 
+lemma struc.definable_set.empty (S : struc R)
+  {X : Type*} [dX : definable S X] : S.definable_set (∅ : set X) :=
+sorry
+
+lemma struc.definable_set.univ (S : struc R)
+  {X : Type*} [dX : definable S X] : S.definable_set (univ : set X) :=
+sorry
+
 lemma struc.definable_set.compl (S : struc R)
   {X : Type*} [dX : definable S X]
   {s : set X} (h : S.definable_set s) : S.definable_set sᶜ :=
@@ -219,6 +227,12 @@ lemma struc.definable_set.inter (S : struc R)
   {X : Type*} [dX : definable S X]
   {s t : set X} (hs : S.definable_set s) (ht : S.definable_set t) :
   S.definable_set (s ∩ t) :=
+sorry
+
+lemma struc.definable_set.union (S : struc R)
+  {X : Type*} [dX : definable S X]
+  {s t : set X} (hs : S.definable_set s) (ht : S.definable_set t) :
+  S.definable_set (s ∪ t) :=
 sorry
 
 lemma struc.definable_set.imp (S : struc R)
