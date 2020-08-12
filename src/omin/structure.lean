@@ -70,6 +70,10 @@ class definable (S : struc R) (X : Type*) :=
 -- a finite family of functions from X to R
 -- which are jointly injective with definable image.
 
+def struc.coords (S : struc R) {X : Type*} [dX : definable S X] :
+  X → R^dX.n :=
+subtype.val ∘ dX.e
+
 instance definable.r (S : struc R) : definable S R :=
 { n := 1, Z := set.univ, h := S.definable_univ,
   e := equiv.pow_one_equiv_self.trans (equiv.set.univ _).symm }
@@ -94,10 +98,101 @@ instance definable.prod (S : struc R)
   h := S.definable_external_prod dX.h dY.h,
   e := (dX.e.prod_congr dY.e).trans (external_prod_equiv _ _) }
 
+@[simp] lemma sum_fin_sum_equiv_inl {m n : ℕ} (i : fin m) :
+  sum_fin_sum_equiv (sum.inl i) = fin.cast_add n i :=
+rfl
+
+@[simp] lemma sum_fin_sum_equiv_inr {m n : ℕ} (i : fin n) :
+  sum_fin_sum_equiv (sum.inr i) = fin.nat_add m i :=
+rfl
+
+@[simp] lemma struc.prod_coords_left (S : struc R)
+  {X Y : Type*} [definable S X] [definable S Y] {p : X × Y} (i : fin _) :
+  S.coords p (fin.cast_add _ i) = S.coords p.fst i :=
+sorry
+
+@[simp] lemma struc.prod_coords_right (S : struc R)
+  {X Y : Type*} [definable S X] [definable S Y] {p : X × Y} (i : fin _) :
+  S.coords p (fin.nat_add _ i) = S.coords p.snd i :=
+sorry
+
 -- Also add Pi of finitely many factors.
 
 -- instance definable.sum ... : definable S (X ⊕ Y)
 -- NB: this requires two distinct distinguished elements of R
+
+section reindexing
+/-
+A function f : X → Y between definable sets is a *reindexing*
+if it fits into a commutative square of the form
+
+  X → Rⁿ
+f ↓   ↓ σ^*
+  Y → Rᵐ
+
+where the horizontal functions are the coordinatizations of X and Y
+and the vertical function is given by reindexing, i.e.,
+of the form x ↦ x ∘ σ for some σ : fin m → fin n.
+
+Reindexings form a category and ordinary products
+(in the sense defined above, i.e., X × Y with its standard coordinatization)
+are also products in this category.
+
+TODO: The structure S is irrelevant to this notion
+but it seems tricky to disentangle it from the definition;
+maybe we should generalize "coordinatized sets"?
+The current approach is awkward but it avoids a very verbose
+`{X : Type*} [coordinates R X] [definable S X]`.
+-/
+
+-- TODO: Bundled reindexings?
+inductive is_reindexing (S : struc R)
+  {X Y : Type*} [dX : definable S X] [dY : definable S Y]
+  (f : X → Y) : Prop
+| mk (σ : fin dY.n → fin dX.n)
+     (h : ∀ x i, S.coords x (σ i) = S.coords (f x) i) : is_reindexing
+
+lemma is_reindexing.id (S : struc R) (X : Type*) [dX : definable S X] :
+  is_reindexing S (id : X → X) :=
+⟨id, λ x i, rfl⟩
+
+lemma is_reindexing.comp (S : struc R)
+  {X Y Z : Type*} [dX : definable S X] [dY : definable S Y] [dZ : definable S Z]
+  {g : Y → Z} (hg : is_reindexing S g) {f : X → Y} (hf : is_reindexing S f) :
+  is_reindexing S (g ∘ f) :=
+begin
+  cases hf with fσ hf,
+  cases hg with gσ hg,
+  refine ⟨fσ ∘ gσ, λ x i, _⟩,
+  simp [hf, hg]
+end
+
+lemma is_reindexing.fst (S : struc R)
+  {X Y : Type*} [dX : definable S X] [dY : definable S Y] :
+  is_reindexing S (prod.fst : X × Y → X) :=
+by { refine ⟨fin.cast_add _, λ x i, _⟩, simp }
+
+lemma is_reindexing.snd (S : struc R)
+  {X Y : Type*} [dX : definable S X] [dY : definable S Y] :
+  is_reindexing S (prod.snd : X × Y → Y) :=
+by { refine ⟨fin.nat_add _, λ x i, _⟩, simp }
+
+lemma is_reindexing.prod (S : struc R)
+  {X Y Z : Type*} [dX : definable S X] [dY : definable S Y] [dZ : definable S Z]
+  {f : X → Y} (hf : is_reindexing S f) {g : X → Z} (hg : is_reindexing S g) :
+  is_reindexing S (λ x, (f x, g x)) :=
+begin
+  cases hf with fσ hf,
+  cases hg with gσ hg,
+  let σ : fin dY.n ⊕ fin dZ.n → fin dX.n := λ i, sum.cases_on i fσ gσ,
+  refine ⟨σ ∘ sum_fin_sum_equiv.symm, λ x, _⟩,
+  dsimp only [(∘)],
+  -- TODO: lemma for `e : α ≃ β` that `(∀ a, p a (e a)) ↔ (∀ b, p (e.symm b) b)`?
+  refine sum_fin_sum_equiv.forall_congr_left.mp _,
+  rintro (i|i); rw equiv.symm_apply_apply; simp [σ, hf, hg]
+end
+
+end reindexing
 
 /-- A subset of a definable set is definable
 if its image under the coordinatization is definable. -/
@@ -141,6 +236,12 @@ lemma struc.definable_set.forall (S : struc R)
   S.definable_set {x | ∀ y, s x y} :=
 sorry
 
+lemma struc.definable_set.exists (S : struc R)
+  {X Y : Type*} [dX : definable S X] [dY : definable S Y]
+  {s : X → Y → Prop} (hs : S.definable_set (function.uncurry s)) :
+  S.definable_set {x | ∃ y, s x y} :=
+sorry
+
 lemma struc.definable_set.eq (S : struc R)
   {X : Type*} [dX : definable S X] :
   S.definable_set {p : X × X | p.1 = p.2} :=
@@ -168,13 +269,19 @@ S.definable_set {p : X × Y | f p.1 = p.2 }
 lemma struc.definable.id (S : struc R)
   {X : Type*} [dX : definable S X] :
   S.definable_fun (id : X → X) :=
-sorry
+struc.definable_set.eq S
 
 lemma struc.definable.comp (S : struc R)
   {X Y Z : Type*} [dX : definable S X] [dY : definable S Y] [dZ : definable S Z]
   {g : Y → Z} (hg : S.definable_fun g) {f : X → Y} (hf : S.definable_fun f) :
   S.definable_fun (λ x, g (f x)) :=
-sorry
+begin
+  apply S.definable_set_of_iff {p : X × Z | ∃ y, f p.1 = y ∧ g y = p.2},
+  { rintro ⟨x, z⟩, simp },
+  apply struc.definable_set.exists,
+  apply struc.definable_set.inter;
+  sorry
+end
 
 lemma struc.definable.preimage (S : struc R)
   {X : Type*} [dX : definable S X]
