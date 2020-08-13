@@ -1,5 +1,9 @@
 import tactic.omega
 import data.fin
+import data.fintype.basic
+import data.set.finite
+import data.set.lattice
+import for_mathlib.equiv
 import for_mathlib.finvec
 
 open set
@@ -39,8 +43,8 @@ structure struc :=
   definable A → definable (A ⊠ U 1))
 (definable_eq_outer {n : ℕ} :
   definable ({x | x 0 = x (fin.last _)} : set (R^(n+1))))
-(definable_proj {n : ℕ} {A : set (R^(n+1))} :
-  definable A → definable (A.image fin.init))
+(definable_proj1 {n : ℕ} {A : set (R^(n+1))} :
+  definable A → definable (A.image (λ x, x ∘ fin.cast_succ)))
 
 variables {R} (S : struc R)
 
@@ -70,6 +74,14 @@ begin
   rw inter_eq_compl_compl_union_compl,
   exact S.definable_compl (S.definable_union (S.definable_compl hA) (S.definable_compl hB))
 end
+
+lemma struc.definable_Inter {ι : Type*} [fintype ι] {n : ℕ} {A : ι → set (R^n)}
+  (hA : ∀ i, S.definable (A i)) : S.definable (⋂ i, A i) :=
+suffices ∀ {s : set ι}, set.finite s → S.definable (⋂ i ∈ s, A i),
+by { convert this finite_univ, simp },
+λ s hs, finite.induction_on hs
+  (by { convert S.definable_univ _, simp })
+  (λ i s _ _ IH, by { convert S.definable_inter (hA i) IH, simp })
 
 lemma struc.definable_rn_prod {m n : ℕ} {A : set (R^n)}
   (hA : S.definable A) : S.definable (U m ⊠ A) :=
@@ -149,6 +161,47 @@ begin
   congr; ext,
   { simp, refl },
   { simpa using (nat.add_sub_cancel' h).symm }
+end
+
+lemma struc.definable_proj (S : struc R) {n m : ℕ} {A : set (R^(n+m))}
+  (hA : S.definable A) : S.definable (A.image (λ x, x ∘ fin.cast_add m)) :=
+begin
+  induction m with m IH,
+  -- Defeqs are in our favor, so just use `convert`.
+  { convert hA,
+    convert set.image_id _,
+    ext x ⟨i,_⟩,
+    refl },
+  { convert IH (S.definable_proj1 hA) using 1,
+    rw ←set.image_comp,
+    refl }
+end
+
+--- [vdD:1.2.2(iii)]
+lemma struc.definable_reindex {n m : ℕ} (σ : fin n → fin m)
+  {B : set (R^n)} (hB : S.definable B) :
+  S.definable {x | x ∘ σ ∈ B} :=
+begin
+  let Z : set (R^(m+n)) :=
+    (⋂ (i : fin n), {z | z ((σ i).cast_add _) = z (i.nat_add _)}) ∩ (U m ⊠ B),
+  have Zdef : ∀ {x : R^m} {y : R^n}, x ++ y ∈ Z ↔ x ∘ σ = y ∧ y ∈ B,
+  { intros x y,
+    simp only [set.mem_inter_iff, set.mem_Inter, set.mem_univ,
+      finvec.append_mem_external_prod, ←and_assoc, and_true],
+    congr',
+    rw [eq_iff_iff, function.funext_iff],
+    apply forall_congr,
+    intro j,
+    change ((x ++ y) ∘ fin.cast_add _) (σ j) = ((x ++ y) ∘ fin.nat_add _) j ↔ _,
+    simp },
+  have : S.definable Z :=
+    S.definable_inter (S.definable_Inter $ λ i, S.definable_eq _ _) (S.definable_rn_prod hB),
+  convert (S.definable_proj this),
+  ext x,
+  rw ←finvec.append_equiv.exists_congr_left,
+  rw prod.exists,
+  simp only [finvec.append_equiv_apply, finvec.append_left, Zdef],
+  finish []
 end
 
 end o_minimal
