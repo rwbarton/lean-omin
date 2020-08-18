@@ -161,6 +161,18 @@ begin
   { simpa using (nat.add_sub_cancel' h).symm }
 end
 
+lemma struc.definable_diag_rn {n : ℕ} :
+  S.definable {x : R^(n+n) | finvec.left x = finvec.right x} :=
+begin
+  have : S.definable {x : R^(n+n) | ∀ (i : fin n), finvec.left x i = finvec.right x i},
+  { convert_to S.definable (⋂ (i : fin n), {x : R^(n+n) | finvec.left x i = finvec.right x i}),
+    { ext, simp },
+    exact S.definable_Inter (λ i, S.definable_eq _ _) },
+  convert this,
+  ext x,
+  apply function.funext_iff
+end
+
 lemma struc.definable_proj (S : struc R) {n m : ℕ} {A : set (R^(n+m))}
   (hA : S.definable A) : S.definable (finvec.left '' A) :=
 begin

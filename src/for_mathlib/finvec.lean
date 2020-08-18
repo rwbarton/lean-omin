@@ -66,7 +66,16 @@ begin
   refl
 end
 
-lemma append.inj_iff {n m : ℕ} (x x' : α^n) (y y' : α^m) :
+@[simp] lemma append_left_right {n m : ℕ} (x : α^(n+m)) : left x ++ right x = x :=
+begin
+  revert x,
+  rw ←append_equiv.forall_congr_left,
+  rintros ⟨l, r⟩,
+  change append_equiv (l, r) with l ++ r,
+  simp
+end
+
+lemma append.inj_iff {n m : ℕ} {x x' : α^n} {y y' : α^m} :
   x ++ y = x' ++ y' ↔ x = x' ∧ y = y' :=
 by simp only [append, append_equiv.apply_eq_iff_eq, prod.mk.inj_iff]
 

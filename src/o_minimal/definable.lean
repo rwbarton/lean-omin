@@ -114,6 +114,29 @@ begin
     exact ⟨x, hy, rfl⟩ }
 end
 
+lemma def_set_eq {X : Def S} : def_set {p : X.prod X | p.1 = p.2} :=
+begin
+  unfold def_set,
+  -- The image of the diagonal of X in Rⁿ × Rⁿ
+  -- is the diagonal of Rⁿ intersected with X × X.
+  convert S.definable_inter
+    (S.definable_external_prod X.definable X.definable)
+    S.definable_diag_rn,
+  ext z,
+  rw [mem_inter_iff, finvec.external_prod_def],
+  change _ ↔ _ ∧ finvec.left z = finvec.right z,
+  split,
+  { rintro ⟨⟨x, y⟩, h, rfl⟩,
+    change x = y at h,
+    simp [coordinate_image, coord, h] },
+  { rintro ⟨⟨hz₁, _⟩, hz₂⟩,
+    rcases hz₁ with ⟨x, hx⟩,
+    refine ⟨⟨x, x⟩, rfl, _⟩,
+    convert finvec.append_left_right _,
+    refine finvec.append.inj_iff.mpr _,
+    simp [hx, hz₂] }
+end
+
 end definable_set
 
 section definable_fun
@@ -125,7 +148,8 @@ variables {X Y Z : Def S}
 /-- A function f : X → Y is definable if its graph is a definable set. -/
 def def_fun (f : X → Y) : Prop := def_set {p : X.prod Y | f p.1 = p.2}
 
--- TODO: def_fun.id; needs def_set_eq; which needs S.definable_diag for Rⁿ ⊆ Rⁿ × Rⁿ.
+lemma def_fun.id (X : Def S) : def_fun (id : X → X) :=
+def_set_eq
 
 lemma def_fun.comp {g : Y → Z} (hg : def_fun g) {f : X → Y} (hf : def_fun f) :
   def_fun (g ∘ f) :=
