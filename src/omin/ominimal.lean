@@ -75,3 +75,5 @@ variables (S : struc R) [definable_constants S] [definable_lt S]
 
 class o_minimal : Prop :=
 (tame_of_definable : ∀ (s : set R), S.definable_set s → tame_r s)
+
+#where
