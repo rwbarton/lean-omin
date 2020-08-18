@@ -116,4 +116,36 @@ end
 
 end definable_set
 
+section definable_fun
+-- Now we introduce definable functions between definable types.
+-- They are the functions whose graphs are definable sets.
+
+variables {X Y Z : Def S}
+
+/-- A function f : X → Y is definable if its graph is a definable set. -/
+def def_fun (f : X → Y) : Prop := def_set {p : X.prod Y | f p.1 = p.2}
+
+-- TODO: def_fun.id; needs def_set_eq; which needs S.definable_diag for Rⁿ ⊆ Rⁿ × Rⁿ.
+
+lemma def_fun.comp {g : Y → Z} (hg : def_fun g) {f : X → Y} (hf : def_fun f) :
+  def_fun (g ∘ f) :=
+begin
+  suffices : def_set {p : X.prod Z | ∃ y, f p.1 = y ∧ g y = p.2},
+  { unfold def_fun,
+    convert this,
+    ext ⟨x, z⟩,
+    simp },
+  apply def_set.exists,
+  apply def_set.inter,
+  -- TODO: Minor annoyance: can't just write (a, b) to construct ↥(X.prod Y).
+  { have : is_reindexing R (λ p : (X.prod Z).prod Y, show X.prod Y, from (p.1.1, p.2)),
+    { apply_rules [is_reindexing.prod, is_reindexing.fst, is_reindexing.snd, is_reindexing.comp] },
+    exact def_set.reindex this hf },
+  { have : is_reindexing R (λ p : (X.prod Z).prod Y, show Y.prod Z, from (p.2, p.1.2)),
+    { apply_rules [is_reindexing.prod, is_reindexing.fst, is_reindexing.snd, is_reindexing.comp] },
+    exact def_set.reindex this hg }
+end
+
+end definable_fun
+
 end o_minimal
