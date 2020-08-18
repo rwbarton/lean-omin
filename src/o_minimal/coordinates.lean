@@ -3,7 +3,9 @@ import data.fin
 import for_mathlib.finvec
 import for_mathlib.misc
 
-open function
+namespace o_minimal
+
+open function set
 open_locale finvec
 
 -- R is the type in which coordinates take values,
@@ -47,10 +49,10 @@ but then the lemmas are under-applied instead:
   coords R = λ x, ...
 -/
 
+variables {R}
+
 lemma injective_coords {X : Type*} [cX : has_coordinates R X] : injective (@coords R X cX) :=
 cX.inj
-
-variables {R}
 
 /-- Rⁿ tautologically has coordinates given by the identity. -/
 @[simps { fully_applied := ff }] instance has_coordinates.finvec (n : ℕ) : has_coordinates R (fin n → R) :=
@@ -65,7 +67,7 @@ variables {R}
   inj := λ a b h, congr_fun h 0 }
 
 /-- If X ⊆ Rⁿ and Y ⊆ Rᵐ then X × Y ⊆ Rⁿ⁺ᵐ. -/
-@[simps { fully_applied := ff }] instance has_coordinates.prod
+@[simps { fully_applied := ff, simp_rhs := tt }] instance has_coordinates.prod
   {X Y : Type*} [cX : has_coordinates R X] [cY : has_coordinates R Y] :
   has_coordinates R (X × Y) :=
 { ambdim := cX.ambdim + cY.ambdim,
@@ -86,10 +88,26 @@ variables {R}
   inj := subsingleton_injective _ }
 
 @[simps { fully_applied := ff, rhs_md := semireducible }]
-instance : has_coordinates R pempty := has_coordinates.subsingleton
+instance pempty.has_coordinates : has_coordinates R pempty := has_coordinates.subsingleton
 
 @[simps { fully_applied := ff, rhs_md := semireducible }]
-instance : has_coordinates R punit := has_coordinates.subsingleton
+instance punit.has_coordinates : has_coordinates R punit := has_coordinates.subsingleton
+
+variables (R)
+
+/-- The subset of Rⁿ which is mapped onto by X. -/
+def coordinate_image (X : Type*) [cX : has_coordinates R X] := range (@coords R X _)
+
+lemma coordinate_image_prod {X Y : Type*} [cX : has_coordinates R X] [cY : has_coordinates R Y] :
+  coordinate_image R (X × Y) = coordinate_image R X ⊠ coordinate_image R Y :=
+begin
+  apply set.ext,
+  refine finvec.append_equiv.forall_congr_left.mp _,
+  rintro ⟨v, w⟩,
+  change finvec.append_equiv (v, w) with v ++ w,
+  rw finvec.external_prod_def,
+  simp [coordinate_image, finvec.append.inj_iff]
+end
 
 end coordinates
 
@@ -181,3 +199,5 @@ begin
 end
 
 end reindexing
+
+end o_minimal

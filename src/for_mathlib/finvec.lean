@@ -66,6 +66,10 @@ begin
   refl
 end
 
+lemma append.inj_iff {n m : ℕ} (x x' : α^n) (y y' : α^m) :
+  x ++ y = x' ++ y' ↔ x = x' ∧ y = y' :=
+by simp only [append, append_equiv.apply_eq_iff_eq, prod.mk.inj_iff]
+
 def external_prod {n m : ℕ} (s : set (α^n)) (t : set (α^m)) : set (α^(n + m)) :=
 {x | left x ∈ s ∧ right x ∈ t}
 
