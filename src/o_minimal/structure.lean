@@ -44,22 +44,20 @@ structure struc :=
 (definable_eq_outer {n : ℕ} :
   definable ({x | x 0 = x (fin.last _)} : set (R^(n+1))))
 (definable_proj1 {n : ℕ} {A : set (R^(n+1))} :
-  definable A → definable (A.image (λ x, x ∘ fin.cast_succ)))
+  definable A → definable (finvec.left '' A))
 
 variables {R} (S : struc R)
 
 lemma struc.convert_definable {n n' : ℕ}
   {A : set (R^n)} {A' : set (R^n')} (hA' : S.definable A')
-  (h : n = n') (e : ∀ x, x ∈ A ↔ (x ∘ fin.cast h.symm) ∈ A') :
+  (h : n = n') (e : ∀ x, x ∈ A ↔ finvec.cast h x ∈ A') :
   S.definable A :=
 begin
   cases h,
   convert hA',
   ext x,
   convert e x,
-  ext i,
-  rw fin.cast_id,
-  refl
+  rw finvec.cast_id
 end
 
 lemma struc.definable_univ (n : ℕ) : S.definable (univ : set (R^n)) :=
@@ -90,19 +88,19 @@ begin
   induction m with m ih,
   { refine S.convert_definable hA (by apply zero_add) _,
     intro x,
-    simp [finvec.external_prod_def, fin.nat_add_zero] },
+    simp [finvec.external_prod_def, finvec.right_zero], },
   { refine S.convert_definable (S.definable_r_prod ih) (by omega) _,
     intro x,
     -- Big yikes
     repeat { rw finvec.external_prod_def },
     dsimp only [nat.succ_eq_add_one],
-    simp [fin.nat_add_add],
+    simp only [true_and, mem_univ],
     convert iff.rfl using 2,
     ext i,
     change x _ = x _,
     congr' 1,
     ext,
-    change 1 + (m + i) = m + (1 + i),
+    change 1 + (m + i) = (m + 1) + i,
     ring }
 end
 
@@ -164,7 +162,7 @@ begin
 end
 
 lemma struc.definable_proj (S : struc R) {n m : ℕ} {A : set (R^(n+m))}
-  (hA : S.definable A) : S.definable (A.image (λ x, x ∘ fin.cast_add m)) :=
+  (hA : S.definable A) : S.definable (finvec.left '' A) :=
 begin
   induction m with m IH,
   -- Defeqs are in our favor, so just use `convert`.
@@ -179,8 +177,7 @@ end
 
 --- [vdD:1.2.2(iii)]
 lemma struc.definable_reindex {n m : ℕ} (σ : fin n → fin m)
-  {B : set (R^n)} (hB : S.definable B) :
-  S.definable {x | x ∘ σ ∈ B} :=
+  {B : set (R^n)} (hB : S.definable B) : S.definable {x | x ∘ σ ∈ B} :=
 begin
   let Z : set (R^(m+n)) :=
     (⋂ (i : fin n), {z | z ((σ i).cast_add _) = z (i.nat_add _)}) ∩ (U m ⊠ B),
@@ -192,7 +189,7 @@ begin
     rw [eq_iff_iff, function.funext_iff],
     apply forall_congr,
     intro j,
-    change ((x ++ y) ∘ fin.cast_add _) (σ j) = ((x ++ y) ∘ fin.nat_add _) j ↔ _,
+    change finvec.left (x ++ y) (σ j) = finvec.right (x ++ y) j ↔ _,
     simp },
   have : S.definable Z :=
     S.definable_inter (S.definable_Inter $ λ i, S.definable_eq _ _) (S.definable_rn_prod hB),

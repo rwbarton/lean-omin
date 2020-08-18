@@ -1,4 +1,5 @@
 import data.equiv.fin
+import for_mathlib.finvec
 
 -- definability mockup
 
@@ -97,14 +98,6 @@ instance definable.prod (S : struc R)
   Z := external_prod dX.Z dY.Z,
   h := S.definable_external_prod dX.h dY.h,
   e := (dX.e.prod_congr dY.e).trans (external_prod_equiv _ _) }
-
-@[simp] lemma sum_fin_sum_equiv_inl {m n : ℕ} (i : fin m) :
-  sum_fin_sum_equiv (sum.inl i) = fin.cast_add n i :=
-rfl
-
-@[simp] lemma sum_fin_sum_equiv_inr {m n : ℕ} (i : fin n) :
-  sum_fin_sum_equiv (sum.inr i) = fin.nat_add m i :=
-rfl
 
 @[simp] lemma struc.prod_coords_left (S : struc R)
   {X Y : Type*} [definable S X] [definable S Y] {p : X × Y} (i : fin _) :
