@@ -125,13 +125,19 @@ begin
   exact hs.not.or ht
 end
 
-lemma def_set.exists {s : X → Y → Prop} (hs : def_set {p : X.prod Y | s p.1 p.2}) :
-  def_set {x | ∃ y, s x y} :=
+lemma def_set.proj {s : set (X.prod Y)} (hs : def_set s) : def_set (prod.fst '' s) :=
 begin
   unfold def_set,
   convert S.definable_proj hs using 1,
   ext z,
   simp, dsimp, simp, refl
+end
+
+lemma def_set.exists {s : X → Y → Prop} (hs : def_set {p : X.prod Y | s p.1 p.2}) :
+  def_set {x | ∃ y, s x y} :=
+begin
+  convert def_set.proj hs,
+  ext, simp, finish
 end
 
 lemma def_set.forall {s : X → Y → Prop} (hs : def_set {p : X.prod Y | s p.1 p.2}) :
@@ -190,6 +196,18 @@ begin
     refine finvec.append.inj_iff.mpr _,
     simp [hx, hz₂] }
 end
+
+lemma def_set.prod_univ {X Y : Def S} {s : set X} (hs : def_set s) :
+  def_set {p : X.prod Y | p.1 ∈ s} :=
+def_set.reindex (is_reindexing.fst R) hs
+
+lemma def_set.univ_prod {X Y : Def S} {t : set Y} (ht : def_set t) :
+  def_set {p : X.prod Y | p.2 ∈ t} :=
+def_set.reindex (is_reindexing.snd R) ht
+
+lemma def_set.prod {X Y : Def S} {s : set X} (hs : def_set s) {t : set Y} (ht : def_set t) :
+  def_set (show set (X.prod Y), from s.prod t) :=
+hs.prod_univ.inter ht.univ_prod
 
 end definable_set
 
@@ -259,25 +277,11 @@ end
 lemma def_fun.preimage {f : X → Y} (hf : def_fun f) {s : set Y} (hs : def_set s) :
   def_set (f ⁻¹' s) :=
 begin
-  unfold def_set,
-  convert S.definable_proj (S.definable_inter hf (S.definable_rn_prod hs)) using 1,
+  -- f ⁻¹' s = {x | ∃ (p : X × Y), p.1 = x ∧ p ∈ Γ(f)}
+  convert def_set.proj (hf.inter ((def_set_univ _).prod hs)) using 1,
   ext,
-  split,
-  { rintro ⟨x, hx, rfl⟩,
-    simp only [mem_image, mem_inter_eq, mem_set_of_eq],
-    refine ⟨finvec.append (coord x) (coord (f x)), _⟩,
-    refine ⟨⟨⟨(x, f x), rfl, rfl⟩, ⟨⟨⟩, _⟩⟩, finvec.append_left _ _⟩,
-    rw finvec.append_right,
-    exact set.mem_image_of_mem _ hx },
-  { rintro ⟨z, ⟨⟨⟨p, hp, rfl⟩, ⟨⟨⟩, ⟨y, hy, H⟩⟩⟩, rfl⟩⟩,
-    refine ⟨p.1, _, (finvec.append_left _ _).symm⟩,
-    show f p.fst ∈ s,
-    change f p.fst = p.snd at hp,
-    rw hp,
-    convert hy,
-    apply @injective_coords R,
-    convert H.symm,
-    exact (finvec.append_right _ _).symm }
+  suffices : f x ∈ s ↔ ∃ y, f x = y ∧ y ∈ s, { simpa },
+  finish
 end
 
 lemma def_fun.fst :
