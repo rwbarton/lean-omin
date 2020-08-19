@@ -224,7 +224,7 @@ begin
     exact def_set.reindex this hg }
 end
 
-lemma is_reindexing.def_fun {X Y : Def S} {f : X → Y} (hf : is_reindexing R f) :
+lemma is_reindexing.def_fun {f : X → Y} (hf : is_reindexing R f) :
   def_fun f :=
 begin
   cases hf with fσ hf,
@@ -256,26 +256,81 @@ begin
       simp [hx, hy], } }
 end
 
--- lemma def_set_eq {X Y : Def S} {f g : X → Z} (hf : def_fun f) (hf : def_fun g) :
---   def_set {x | f x = g x} :=
--- begin
---   sorry
--- end
+lemma def_fun.preimage {f : X → Y} (hf : def_fun f) {s : set Y} (hs : def_set s) :
+  def_set (f ⁻¹' s) :=
+begin
+  unfold def_set,
+  convert S.definable_proj (S.definable_inter hf (S.definable_rn_prod hs)) using 1,
+  ext,
+  split,
+  { rintro ⟨x, hx, rfl⟩,
+    simp only [mem_image, mem_inter_eq, mem_set_of_eq],
+    refine ⟨finvec.append (coord x) (coord (f x)), _⟩,
+    refine ⟨⟨⟨(x, f x), rfl, rfl⟩, ⟨⟨⟩, _⟩⟩, finvec.append_left _ _⟩,
+    rw finvec.append_right,
+    exact set.mem_image_of_mem _ hx },
+  { rintro ⟨z, ⟨⟨⟨p, hp, rfl⟩, ⟨⟨⟩, ⟨y, hy, H⟩⟩⟩, rfl⟩⟩,
+    refine ⟨p.1, _, (finvec.append_left _ _).symm⟩,
+    show f p.fst ∈ s,
+    change f p.fst = p.snd at hp,
+    rw hp,
+    convert hy,
+    apply @injective_coords R,
+    convert H.symm,
+    exact (finvec.append_right _ _).symm }
+end
 
--- lemma def_fun.image {X Y : Def S} {f : X → Y} (hf : def_fun f) {s : set X} (hs : def_set s) :
---   def_set (f '' s) :=
--- begin
---   show def_set {y | ∃ x, x ∈ s ∧ f x = y},
---   apply def_set.exists,
---   apply def_set.and _,
---   exact def_set_eq (hf.comp def_fun.snd) (def_fun.fst),
--- end
+lemma def_fun.fst :
+  def_fun (show (X.prod Y) → X, from prod.fst) :=
+begin
+  apply is_reindexing.def_fun,
+  exact (is_reindexing.fst R)
+end
 
--- lemma def_fun.preimage {X Y : Def S} {f : X → Y} (hf : def_fun f) {s : set Y} (hs : def_set s) :
---   def_set (f ⁻¹' s) :=
--- begin
---   show def_set {x | f x ∈ s},
--- end
+lemma def_fun.snd :
+  def_fun (show (X.prod Y) → Y, from prod.snd) :=
+begin
+  apply is_reindexing.def_fun,
+  exact (is_reindexing.snd R)
+end
+
+lemma def_fun.prod' {f : X → Y} {g : X → Z} (hf : def_fun f) (hg : def_fun g) :
+  def_fun (show X → (Y.prod Z), from λ x, (f x, g x)) :=
+begin
+  unfold def_fun,
+  let p1 : X.prod (Y.prod Z) → X.prod Y := λ p, (p.1, p.2.1),
+  have hp1 : def_fun p1,
+  { apply is_reindexing.def_fun,
+    apply (is_reindexing.fst R).prod R
+      ((is_reindexing.fst R).comp R (is_reindexing.snd R)) },
+  let p2 : X.prod (Y.prod Z) → X.prod Z := λ p, (p.1, p.2.2),
+  have hp2 : def_fun p2,
+  { apply is_reindexing.def_fun,
+    apply (is_reindexing.fst R).prod R
+      ((is_reindexing.snd R).comp R (is_reindexing.snd R)) },
+  convert (hp1.preimage hf).inter (hp2.preimage hg),
+  ext ⟨x,y,z⟩,
+  show (f x, g x) = (y,z) ↔ _,
+  simp only [mem_inter_eq, prod.mk.inj_iff, mem_set_of_eq, preimage_set_of_eq],
+end
+
+lemma def_fun.prod {W : Def S} {f : X → Z} {g : Y → W} (hf : def_fun f) (hg : def_fun g) :
+  def_fun (show (X.prod Y) → (Z.prod W), from prod.map f g) :=
+(hf.comp def_fun.fst).prod' (hg.comp def_fun.snd)
+
+lemma def_set_eq {X Y : Def S} {f g : X → Y} (hf : def_fun f) (hg : def_fun g) :
+  def_set {x | f x = g x} :=
+(hf.prod' hg).preimage (def_set_diag)
+
+lemma def_fun.image {X Y : Def S} {f : X → Y} (hf : def_fun f) {s : set X} (hs : def_set s) :
+  def_set (f '' s) :=
+begin
+  show def_set {y | ∃ x, x ∈ s ∧ f x = y},
+  apply def_set.exists,
+  apply (def_fun.preimage def_fun.snd hs).and
+    (def_set_eq (hf.comp def_fun.snd) (def_fun.fst)),
+end
+
 
 end definable_fun
 
