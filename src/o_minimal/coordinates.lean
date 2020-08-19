@@ -51,7 +51,7 @@ but then the lemmas are under-applied instead:
 
 variables {R}
 
-lemma injective_coords {X : Type*} [cX : has_coordinates R X] : injective (@coords R X cX) :=
+lemma injective_coords (X : Type*) [cX : has_coordinates R X] : injective (@coords R X cX) :=
 cX.inj
 
 /-- Rⁿ tautologically has coordinates given by the identity. -/
