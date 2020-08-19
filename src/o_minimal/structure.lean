@@ -73,6 +73,13 @@ begin
   exact S.definable_compl (S.definable_union (S.definable_compl hA) (S.definable_compl hB))
 end
 
+lemma struc.definable_diff {n : ℕ} {A B : set (R^n)}
+  (hA : S.definable A) (hB : S.definable B) : S.definable (A \ B) :=
+begin
+  rw diff_eq,
+  exact S.definable_inter hA (S.definable_compl hB)
+end
+
 lemma struc.definable_Inter {ι : Type*} [fintype ι] {n : ℕ} {A : ι → set (R^n)}
   (hA : ∀ i, S.definable (A i)) : S.definable (⋂ i, A i) :=
 suffices ∀ {s : set ι}, set.finite s → S.definable (⋂ i ∈ s, A i),

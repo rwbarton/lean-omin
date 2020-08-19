@@ -67,6 +67,11 @@ begin
   simp [def_set]
 end
 
+lemma def_set_univ : def_set (set.univ : set X) :=
+begin
+  simpa [def_set] using X.definable
+end
+
 lemma def_set.inter {s t : set X} (hs : def_set s) (ht : def_set t) :
   def_set (s ∩ t) :=
 begin
@@ -75,9 +80,46 @@ begin
   simp [def_set, image_inter this]
 end
 
+lemma def_set.union {s t : set X} (hs : def_set s) (ht : def_set t) :
+  def_set (s ∪ t) :=
+begin
+  convert S.definable_union hs ht,
+  simp [def_set, image_union (@coord R S X)]
+end
+
+lemma def_set.diff {s t : set X} (hs : def_set s) (ht : def_set t) :
+  def_set (s \ t) :=
+begin
+  convert S.definable_diff hs ht,
+  have : function.injective (@coord R S X) := X.coords.inj,
+  simp [def_set, image_diff this],
+end
+
+lemma def_set.compl {s : set X} (hs : def_set s) :
+  def_set (sᶜ) :=
+by { rw compl_eq_univ_diff, exact (def_set_univ).diff hs }
+
 -- TODO:
--- univ compl union {x | s x → t x}
 -- finite intersections, unions
+
+lemma def_set.or {s t : X → Prop} (hs : def_set {x : X | s x}) (ht : def_set {x : X | t x}) :
+  def_set {x | s x ∨ t x} :=
+hs.union ht
+
+lemma def_set.and {s t : X → Prop} (hs : def_set {x : X | s x}) (ht : def_set {x : X | t x}) :
+  def_set {x | s x ∧ t x} :=
+hs.inter ht
+
+lemma def_set.not {s : X → Prop} (hs : def_set {x : X | s x}) :
+  def_set {x | ¬ s x} :=
+hs.compl
+
+lemma def_set.imp {s t : X → Prop} (hs : def_set {x : X | s x}) (ht : def_set {x : X | t x}) :
+  def_set {x | s x → t x} :=
+begin
+  simp [classical.imp_iff_not_or], -- classical!
+  exact hs.not.or ht
+end
 
 lemma def_set.exists {s : X → Y → Prop} (hs : def_set {p : X.prod Y | s p.1 p.2}) :
   def_set {x | ∃ y, s x y} :=
@@ -88,7 +130,15 @@ begin
   simp, dsimp, simp, refl
 end
 
--- TODO: forall
+lemma def_set.forall {s : X → Y → Prop} (hs : def_set {p : X.prod Y | s p.1 p.2}) :
+  def_set {x | ∀ y, s x y} :=
+begin
+  -- classical!!
+  have : ∀ (s : X → Y → Prop) (hs : def_set {p : X.prod Y | s p.1 p.2}),
+    def_set {x | ∀ y, ¬ s x y},
+  { intros t ht, simpa using ht.exists.not },
+  simpa using this (λ x y, ¬ s x y) hs.not,
+end
 
 lemma def_set.reindex {X Y : Def S} {f : X → Y} (hf : is_reindexing R f)
   {s : set Y} (hs : def_set s) : def_set (f ⁻¹' s) :=

@@ -1,4 +1,6 @@
 import omin.ominimal
+import data.set.disjointed
+import data.setoid.partition
 
 section omin
 
@@ -12,7 +14,7 @@ def init {n} : R^(n+1) → R^n := λ x, x ∘ fin.cast_succ
 namespace struc
 
 def cell : Π {n}, set (R^n) → Prop
-| 0     s := s.nonempty
+| 0     s := s = set.univ
 | (n+1) s := ∃ (s₀ : set (R^n)) (h : cell s₀),
                   s = {x | (init x) ∈ s₀}
               ∨
@@ -25,15 +27,28 @@ def cell : Π {n}, set (R^n) → Prop
                 (∀ x₀ ∈ s₀, f x₀ < g x₀) ∧
                   s = {x | (init x) ∈ s₀ ∧ x (fin.last n) ∈ set.Ioo (f (init x)) (g (init x))})
 
+lemma init_definable (n : ℕ) :
+  S.definable_fun (init : R^(n+1) → R^n) :=
+begin
+  sorry
+end
+
 lemma cell.definable : ∀ {n} (s : set (R^n)) (hs : S.cell s), S.definable s
-| 0     s hs := sorry
+| 0     s hs := by { cases hs, exact S.definable_univ }
 | (n+1) s hs :=
 begin
   obtain ⟨s₀, hs₀, H|H|H⟩ := hs,
+  { cases H,
+    show S.definable (init ⁻¹' s₀), sorry },
   sorry,
   sorry,
-  sorry
 end
+
+def decomposition : Π {n} (C : set (set (R^n))), Prop
+| 0     C := C = {set.univ}
+| (n+1) C := C.finite ∧ setoid.is_partition C
+            ∧ ∀ s ∈ C, S.cell s
+            ∧ decomposition ((set.image init) '' C)
 
 end struc
 
