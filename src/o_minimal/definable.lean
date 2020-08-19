@@ -37,12 +37,15 @@ def coord {X : Def S} : X → fin X.coords.ambdim → R :=
 lemma range_coord {X : Def S} : range (@coord R S X) = coordinate_image R X :=
 rfl
 
-@[simps] def Def.prod (X Y : Def S) : Def S :=
+def Def.prod (X Y : Def S) : Def S :=
 { carrier := X.carrier × Y.carrier,
   definable := begin
     rw coordinate_image_prod,
     exact S.definable_external_prod X.definable Y.definable
   end }
+
+@[simp] lemma Def.coe_prod {X Y : Def S} : ↥(X.prod Y) = (↥X × ↥Y) :=
+rfl
 
 @[simp] lemma Def.prod.coord_left {X Y : Def S} (p : X.prod Y) :
   finvec.left (coord p) = coord p.1 :=
@@ -51,6 +54,58 @@ by apply finvec.append_left
 @[simp] lemma Def.prod.coord_right {X Y : Def S} (p : X.prod Y) :
   finvec.right (coord p) = coord p.2 :=
 by apply finvec.append_right
+
+/-
+@[unify] def Def_hint {X Y Z : Def S} : unification_hint :=
+{ pattern := ↥Z ≟ (↥X × ↥Y),
+  constraints := [Z ≟ X.prod Y] }
+
+This unification hint lets us write X × Y in place of X.prod Y
+in simple situations but it fails when it would need to be applied recursively:
+
+type mismatch at application
+  preimage q
+term
+  q
+has type
+  (↥X × ↥Z) × ↥Y → ↥X × ↥Y : Type u
+but is expected to have type
+  ↥?m_3 → ↥X × ↥Y : Type (max ? u)
+state:
+R : Type u,
+S : struc R,
+X Y Z : Def S,
+g : ↥Y → ↥Z,
+hg : def_fun g,
+f : ↥X → ↥Y,
+hf : def_fun f,
+q : (↥X × ↥Z) × ↥Y → ↥X × ↥Y := λ (p : (↥X × ↥Z) × ↥Y), (p.fst.fst, p.snd),
+this : is_reindexing R q
+⊢ def_set {x : ↥((X.prod Z).prod Y) | f x.fst.fst = x.snd}
+
+We need to solve ↥?m_3 = (↥X × ↥Z) × ↥Y
+but it is not (yet) of the form ↥?m_3 = ↥A × ↥B
+because first we need to figure out that
+we should solve ↥A = ↥X × ↥Z by taking A = X.prod Z.
+-/
+
+/-
+@[unify] def Def_hint {α β : Type u} {A B Z : Def.{u} S} : unification_hint :=
+{ pattern := ↥Z ≟ (α × β),
+  constraints := [↥A ≟ α, ↥B ≟ β, Z ≟ A.prod B] }
+
+This ought to solve the problem above:
+
+  ↥?m_3 ≟ (↥X × ↥Z) × ↥Y
+  [↥?A ≟ ↥X × ↥Z, ↥?B ≟ ↥Y, ?m_3 ≟ ?A.prod ?B]
+  [↥?A₁ ≟ ↥X, ↥?A₂ = ↥Z, ?A = ?A₁.prod ?A₂, ↥?B ≟ ↥Y, ?m_3 ≟ ?A.prod ?B]
+  A₁ = X, A₂ = Z, A = X.prod Z, B = Y, ?m_3 = (X.prod Z).prod Y
+
+For some reason it doesn't work;
+maybe the elaborator doesn't want to introduce new metavariables?
+
+How is this handled in Coq?
+-/
 
 section definable_set
 /-
