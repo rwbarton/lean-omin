@@ -194,6 +194,35 @@ begin
     refl }
 end
 
+lemma struc.definable_reindex_aux {n m : ℕ} (σ : fin n → fin m)
+  {B : set (R^n)} (hB : S.definable B) :
+  S.definable {x : fin (m + n) → R | finvec.left x ∘ σ = finvec.right x ∧ finvec.right x ∈ B} :=
+begin
+  let Z : set (R^(m+n)) :=
+    (⋂ (i : fin n), {z | z ((σ i).cast_add _) = z (i.nat_add _)}) ∩ (U m ⊠ B),
+  have Zdef : ∀ (x : R^m) (y : R^n), x ++ y ∈ Z ↔ x ∘ σ = y ∧ y ∈ B,
+  { intros x y,
+    simp only [set.mem_inter_iff, set.mem_Inter, set.mem_univ,
+      finvec.append_mem_external_prod, ←and_assoc, and_true],
+    congr',
+    rw [eq_iff_iff, function.funext_iff],
+    apply forall_congr,
+    intro j,
+    change finvec.left (x ++ y) (σ j) = finvec.right (x ++ y) j ↔ _,
+    simp },
+  have : S.definable Z :=
+    S.definable_inter (S.definable_Inter $ λ i, S.definable_eq _ _) (S.definable_rn_prod hB),
+  convert this,
+  ext z,
+  dsimp,
+  specialize Zdef (finvec.left z) (finvec.right z),
+  rw finvec.append_left_right at Zdef,
+  simp at Zdef,
+  simp [Zdef],
+  exact iff.rfl,
+end
+
+
 --- [vdD:1.2.2(iii)]
 lemma struc.definable_reindex {n m : ℕ} (σ : fin n → fin m)
   {B : set (R^n)} (hB : S.definable B) : S.definable {x | x ∘ σ ∈ B} :=

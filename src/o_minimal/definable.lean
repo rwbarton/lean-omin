@@ -61,6 +61,8 @@ variables {X Y : Def S}
 
 def def_set (s : set X) : Prop := S.definable (coord '' s)
 
+variable (X)
+
 lemma def_set_empty : def_set (∅ : set X) :=
 begin
   convert S.definable_empty _,
@@ -71,6 +73,8 @@ lemma def_set_univ : def_set (set.univ : set X) :=
 begin
   simpa [def_set] using X.definable
 end
+
+variable {X}
 
 lemma def_set.inter {s t : set X} (hs : def_set s) (ht : def_set t) :
   def_set (s ∩ t) :=
@@ -97,7 +101,7 @@ end
 
 lemma def_set.compl {s : set X} (hs : def_set s) :
   def_set (sᶜ) :=
-by { rw compl_eq_univ_diff, exact (def_set_univ).diff hs }
+by { rw compl_eq_univ_diff, exact (def_set_univ _).diff hs }
 
 -- TODO:
 -- finite intersections, unions
@@ -164,7 +168,7 @@ begin
     exact ⟨x, hy, rfl⟩ }
 end
 
-lemma def_set_eq {X : Def S} : def_set {p : X.prod X | p.1 = p.2} :=
+lemma def_set_diag {X : Def S} : def_set {p : X.prod X | p.1 = p.2} :=
 begin
   unfold def_set,
   -- The image of the diagonal of X in Rⁿ × Rⁿ
@@ -199,7 +203,7 @@ variables {X Y Z : Def S}
 def def_fun (f : X → Y) : Prop := def_set {p : X.prod Y | f p.1 = p.2}
 
 lemma def_fun.id (X : Def S) : def_fun (id : X → X) :=
-def_set_eq
+def_set_diag
 
 lemma def_fun.comp {g : Y → Z} (hg : def_fun g) {f : X → Y} (hf : def_fun f) :
   def_fun (g ∘ f) :=
@@ -210,7 +214,7 @@ begin
     ext ⟨x, z⟩,
     simp },
   apply def_set.exists,
-  apply def_set.inter,
+  apply def_set.and,
   -- TODO: Minor annoyance: can't just write (a, b) to construct ↥(X.prod Y).
   { have : is_reindexing R (λ p : (X.prod Z).prod Y, show X.prod Y, from (p.1.1, p.2)),
     { apply_rules [is_reindexing.prod, is_reindexing.fst, is_reindexing.snd, is_reindexing.comp] },
@@ -219,6 +223,59 @@ begin
     { apply_rules [is_reindexing.prod, is_reindexing.fst, is_reindexing.snd, is_reindexing.comp] },
     exact def_set.reindex this hg }
 end
+
+lemma is_reindexing.def_fun {X Y : Def S} {f : X → Y} (hf : is_reindexing R f) :
+  def_fun f :=
+begin
+  cases hf with fσ hf,
+  unfold def_fun,
+  unfold def_set,
+  convert S.definable_inter (S.definable_prod_rn X.definable) (S.definable_reindex_aux fσ (def_set_univ Y)),
+  ext z,
+  split,
+  { rintro ⟨⟨x, y⟩, h, rfl⟩,
+    change f x = y at h, subst y,
+    show _ ∧ _ ∧ _,
+    simp only [Def.prod.coord_left, mem_range_self, and_true, image_univ, Def.prod.coord_right],
+    refine ⟨⟨⟨x, _⟩, ⟨⟩⟩, _⟩,
+    { simp only [Def.prod.coord_left], refl },
+    { ext i,
+      apply hf, }, },
+  { rintro ⟨⟨⟨x, hx⟩, ⟨⟩⟩, ⟨hz, ⟨y, ⟨⟩, hy⟩⟩⟩,
+    simp only [mem_image, mem_set_of_eq],
+    use [(x,y)],
+    split,
+    { apply @injective_coords R,
+      ext i,
+      show coords R (f x) i = coords R y i,
+      rw ← hf,
+      rw [← hx, ← hy] at hz,
+      exact congr_fun hz i },
+    { -- we need simp lemmas that relate coords and coord
+      show finvec.append (coords R x) (coord y) = _,
+      simp [hx, hy], } }
+end
+
+-- lemma def_set_eq {X Y : Def S} {f g : X → Z} (hf : def_fun f) (hf : def_fun g) :
+--   def_set {x | f x = g x} :=
+-- begin
+--   sorry
+-- end
+
+-- lemma def_fun.image {X Y : Def S} {f : X → Y} (hf : def_fun f) {s : set X} (hs : def_set s) :
+--   def_set (f '' s) :=
+-- begin
+--   show def_set {y | ∃ x, x ∈ s ∧ f x = y},
+--   apply def_set.exists,
+--   apply def_set.and _,
+--   exact def_set_eq (hf.comp def_fun.snd) (def_fun.fst),
+-- end
+
+-- lemma def_fun.preimage {X Y : Def S} {f : X → Y} (hf : def_fun f) {s : set Y} (hs : def_set s) :
+--   def_set (f ⁻¹' s) :=
+-- begin
+--   show def_set {x | f x ∈ s},
+-- end
 
 end definable_fun
 
