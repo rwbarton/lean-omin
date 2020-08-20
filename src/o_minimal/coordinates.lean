@@ -160,7 +160,7 @@ begin
 end
 
 lemma is_reindexing.fst
-  {X Y : Type*} [cX : has_coordinates R X] [dY : has_coordinates R Y] :
+  {X Y : Type*} [cX : has_coordinates R X] [cY : has_coordinates R Y] :
   is_reindexing R (prod.fst : X × Y → X) :=
 begin
   refine ⟨fin.cast_add _, λ p i, _⟩,
@@ -169,7 +169,7 @@ begin
 end
 
 lemma is_reindexing.snd
-  {X Y : Type*} [dX : has_coordinates R X] [dY : has_coordinates R Y] :
+  {X Y : Type*} [cX : has_coordinates R X] [cY : has_coordinates R Y] :
   is_reindexing R (prod.snd : X × Y → Y) :=
 begin
   refine ⟨fin.nat_add _, λ p i, _⟩,
@@ -178,13 +178,13 @@ begin
 end
 
 lemma is_reindexing.prod
-  {X Y Z : Type*} [dX : has_coordinates R X] [dY : has_coordinates R Y] [dZ : has_coordinates R Z]
+  {X Y Z : Type*} [cX : has_coordinates R X] [cY : has_coordinates R Y] [cZ : has_coordinates R Z]
   {f : X → Y} (hf : is_reindexing R f) {g : X → Z} (hg : is_reindexing R g) :
   is_reindexing R (λ x, (f x, g x)) :=
 begin
   cases hf with fσ hf,
   cases hg with gσ hg,
-  let σ : fin dY.ambdim ⊕ fin dZ.ambdim → fin dX.ambdim := λ i, sum.cases_on i fσ gσ,
+  let σ : fin cY.ambdim ⊕ fin cZ.ambdim → fin cX.ambdim := λ i, sum.cases_on i fσ gσ,
   refine ⟨σ ∘ sum_fin_sum_equiv.symm, λ x, _⟩,
   dsimp only [(∘)],
   -- TODO: lemma for `e : α ≃ β` that `(∀ a, p a (e a)) ↔ (∀ b, p (e.symm b) b)`?
@@ -197,6 +197,10 @@ begin
     refine congr_fun _ i,
     exact (finvec.append_right _ _).symm }
 end
+
+lemma is_reindexing.coord {X : Type*} [cX : has_coordinates R X] (i : fin cX.ambdim) :
+  is_reindexing R (λ x, coords R x i) :=
+⟨λ _, i, λ x j, rfl⟩
 
 end reindexing
 

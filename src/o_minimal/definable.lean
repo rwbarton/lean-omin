@@ -21,12 +21,24 @@ if the corresponding subset of Rⁿ is definable according to S.
 class is_definable (X : Type*) [has_coordinates R X] : Prop :=
 (definable [] : S.definable (coordinate_image R X))
 
+instance is_definable.self : is_definable S R :=
+begin
+  constructor,
+  convert S.definable_univ 1,
+  ext,
+  simp [coordinate_image],
+  use (x 0),
+  ext i,
+  have : i = 0 := by cc,
+  subst i
+end
+
 variables {X : Type*} [has_coordinates R X] [is_definable S X]
 variables {Y : Type*} [has_coordinates R Y] [is_definable S Y]
 variables {Z : Type*} [has_coordinates R Z] [is_definable S Z]
 variables {W : Type*} [has_coordinates R W] [is_definable S W]
 
-instance : is_definable S (X × Y) :=
+instance is_definable.prod : is_definable S (X × Y) :=
 begin
   constructor,
   rw coordinate_image_prod,
@@ -80,8 +92,24 @@ end
 lemma def_set.compl {s : set X} (hs : def_set S s) : def_set S (sᶜ) :=
 by { rw compl_eq_univ_diff, exact (def_set_univ _).diff hs }
 
--- TODO:
--- finite intersections, unions
+lemma def_set.compl' {s : set X} (hs : def_set S sᶜ) : def_set S s :=
+by { rw ←compl_compl s, exact hs.compl }
+
+lemma def_set_Inter {ι : Type*} [fintype ι] {t : ι → set X}
+  (ht : ∀ i, def_set S (t i)) : def_set S (⋂ i, t i) :=
+suffices ∀ {s : set ι}, set.finite s → def_set S (⋂ i ∈ s, t i),
+by { convert this finite_univ, simp },
+λ s hs, finite.induction_on hs
+  (by { convert def_set_univ _, simp, apply_instance }) -- why is apply_instance needed here?
+  (λ i s _ _ IH, by { convert (ht i).inter IH, simp })
+
+lemma def_set_Union {ι : Type*} [fintype ι] {t : ι → set X}
+  (ht : ∀ i, def_set S (t i)) : def_set S (⋃ i, t i) :=
+begin
+  apply def_set.compl',
+  rw compl_Union,
+  exact def_set_Inter (λ i, (ht i).compl)
+end
 
 lemma def_set.or {s t : X → Prop} (hs : def_set S {x : X | s x}) (ht : def_set S {x : X | t x}) :
   def_set S {x | s x ∨ t x} :=
@@ -259,6 +287,9 @@ begin
   ext, simp
 end
 
+lemma def_fun.coord (i : fin (has_coordinates.ambdim R X)) : def_fun S (λ x : X, coords R x i) :=
+is_reindexing.def_fun (is_reindexing.coord R i)
+
 lemma def_fun.fst : def_fun S (prod.fst : X × Y → X) :=
 is_reindexing.def_fun (is_reindexing.fst R)
 
@@ -301,5 +332,48 @@ def_set.exists $
   (def_set_eq (hf.comp def_fun.snd) (def_fun.fst))
 
 end definable_fun
+
+section definable_val
+-- Finally, a "value" (element) of X is definable
+-- if the corresponding singleton set is definable.
+--
+-- This notion is mostly used for bootstrapping
+-- because in the o-minimal project we're only interested in
+-- structures S on R in which every r ∈ R is definable,
+-- which forces every value of every definable type to be definable.
+
+/-- A value `x : X` is definable if `{x}` is definable. -/
+def def_val (x : X) : Prop := def_set S ({x} : set X)
+
+variables (S)
+
+/-- A structure `S` on `R` has *definable constants*
+if every `r : R` is definable. -/
+class definable_constants : Prop :=
+(definable_val : ∀ (r : R), def_val S r)
+
+variables {S}
+
+lemma def_set_eq_const {f : X → Y} (hf : def_fun S f) {y : Y} (hy : def_val S y) :
+  def_set S {x | f x = y} :=
+show def_set S (f ⁻¹' {y}), from
+hf.preimage hy
+
+lemma def_val_const [definable_constants S] {x : X} : def_val S x :=
+begin
+  unfold def_val,
+  have : {x} = ⋂ i, {x' : X | coords R x' i = coords R x i},
+  { ext x',
+    rw [mem_singleton_iff, mem_Inter],
+    exact (@injective_coords R X _).eq_iff.symm.trans function.funext_iff },
+  rw this,
+  apply def_set_Inter,
+  intro i,
+  exact def_set_eq_const (def_fun.coord i) (definable_constants.definable_val _)
+end
+
+-- TODO: more lemmas as needed.
+
+end definable_val
 
 end o_minimal
