@@ -354,10 +354,20 @@ class definable_constants : Prop :=
 
 variables {S}
 
-lemma def_set_eq_const {f : X → Y} (hf : def_fun S f) {y : Y} (hy : def_val S y) :
+-- These primed lemmas take `def_val` arguments
+-- and have unprimed variants which use a `definable_constants S` assumption.
+
+lemma def_set_eq_const' {f : X → Y} (hf : def_fun S f) {y : Y} (hy : def_val S y) :
   def_set S {x | f x = y} :=
 show def_set S (f ⁻¹' {y}), from
 hf.preimage hy
+
+lemma def_set_const_eq' {f : X → Y} (hf : def_fun S f) {y : Y} (hy : def_val S y) :
+  def_set S {x | y = f x} :=
+by { convert def_set_eq_const' hf hy, simp_rw [eq_comm] }
+
+lemma def_fun_const' {y : Y} (hy : def_val S y) : def_fun S (λ (x : X), y) :=
+def_set_const_eq' def_fun.snd hy
 
 lemma def_val_const [definable_constants S] {x : X} : def_val S x :=
 begin
@@ -369,8 +379,19 @@ begin
   rw this,
   apply def_set_Inter,
   intro i,
-  exact def_set_eq_const (def_fun.coord i) (definable_constants.definable_val _)
+  exact def_set_eq_const' (def_fun.coord i) (definable_constants.definable_val _)
 end
+
+lemma def_set_eq_const [definable_constants S] {f : X → Y} (hf : def_fun S f) (y : Y) :
+  def_set S {x | f x = y} :=
+def_set_eq_const' hf def_val_const
+
+lemma def_set_const_eq [definable_constants S] {f : X → Y} (hf : def_fun S f) (y : Y) :
+  def_set S {x | y = f x} :=
+def_set_const_eq' hf def_val_const
+
+lemma def_fun_const [definable_constants S] {y : Y} : def_fun S (λ (x : X), y) :=
+def_fun_const' def_val_const
 
 -- TODO: more lemmas as needed.
 
