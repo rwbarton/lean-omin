@@ -18,12 +18,15 @@ structure closed_under_finite_unions : Prop :=
 (mem_empty : ∅ ∈ B)
 (mem_union {s t} : s ∈ B → t ∈ B → s ∪ t ∈ B)
 
-section
+/-- The closure of a family of sets under finite unions. -/
+inductive finite_union_closure : set (set α)
+| basic {s} : s ∈ B → finite_union_closure s
+| empty : finite_union_closure ∅
+| union {s t} : finite_union_closure s → finite_union_closure t → finite_union_closure (s ∪ t)
 
-variables {B} (hB : closed_under_finite_unions B)
-include hB                      -- TODO: delete
+variables {B}
 
-lemma closed_under_finite_unions.mem_bUnion {t : finset (set α)}
+lemma closed_under_finite_unions.mem_bUnion (hB : closed_under_finite_unions B) {t : finset (set α)}
   (ht : ∀ i ∈ t, i ∈ B) : (⋃ i ∈ t, i) ∈ B :=
 begin
   classical,
@@ -34,14 +37,6 @@ begin
   have h₂ : (⋃ i ∈ s, i) ∈ B := ih (λ i hi, ht i (finset.mem_insert_of_mem hi)),
   simpa using hB.mem_union h₁ h₂
 end
-
-end
-
-/-- The closure of a family of sets under finite unions. -/
-inductive finite_union_closure : set (set α)
-| basic {s} : s ∈ B → finite_union_closure s
-| empty : finite_union_closure ∅
-| union {s t} : finite_union_closure s → finite_union_closure t → finite_union_closure (s ∪ t)
 
 /-- The closure of B under finite unions is closed under finite unions. -/
 lemma closed_under_finite_unions_finite_union_closure :
@@ -71,7 +66,7 @@ begin
         cases finset.mem_union.mp hi; solve_by_elim },
       { rw finset.bUnion_union, cc } } },
   { rintro ⟨t, ht, rfl⟩,
-    refine (closed_under_finite_unions_finite_union_closure B).mem_bUnion (λ i hi, _),
+    refine closed_under_finite_unions_finite_union_closure.mem_bUnion (λ i hi, _),
     apply finite_union_closure.basic,
     exact ht i hi }
 end
@@ -93,8 +88,22 @@ inductive finite_inter_closure : set (set α)
 | univ : finite_inter_closure univ
 | inter {s t} : finite_inter_closure s → finite_inter_closure t → finite_inter_closure (s ∩ t)
 
+variables {B}
+
+lemma closed_under_finite_inters.mem_bInter (hB : closed_under_finite_inters B) {t : finset (set α)}
+  (ht : ∀ i ∈ t, i ∈ B) : (⋂ i ∈ t, i) ∈ B :=
+begin
+  classical,
+  revert ht,
+  refine finset.induction_on t (by simpa using hB.mem_univ) _,
+  intros a s _ ih ht,           -- TODO: use rintros -
+  have h₁ : a ∈ B := ht a (finset.mem_insert_self a s),
+  have h₂ : (⋂ i ∈ s, i) ∈ B := ih (λ i hi, ht i (finset.mem_insert_of_mem hi)),
+  simpa using hB.mem_inter h₁ h₂
+end
+
 /-- The closure of B under finite intersections is closed under finite intersections. -/
-lemma closed_under_finite_intersections_finite_inter_closure :
+lemma closed_under_finite_inters_finite_inter_closure :
   closed_under_finite_inters (finite_inter_closure B) :=
 { mem_univ := finite_inter_closure.univ,
   mem_inter := λ _ _ hs ht, hs.inter ht }
@@ -102,6 +111,29 @@ lemma closed_under_finite_intersections_finite_inter_closure :
 /-- The closure of B under finite intersections contains B. -/
 lemma closed_under_finite_inters_contains_self : B ⊆ finite_inter_closure B :=
 λ s, finite_inter_closure.basic
+
+/-- The closure of B under finite intersections can also be described as
+the class of sets which can be written as a finite intersection of members of B. -/
+lemma finite_inter_closure_iff_bInter {s : set α} :
+  s ∈ finite_inter_closure B ↔
+  ∃ t : finset (set α), (∀ i ∈ t, i ∈ B) ∧ s = ⋂ i ∈ t, i :=
+begin
+  split,
+  { apply finite_inter_closure.rec; clear s,
+    { intros s hs,
+      exact ⟨{s}, by simp [hs]⟩ },
+    { exact ⟨∅, by simp⟩ },
+    { rintros s s' hs hs' ⟨t, ht, hst⟩ ⟨t', ht', hst'⟩,
+      classical,
+      refine ⟨t ∪ t', _, _⟩,
+      { intros _ hi,
+        cases finset.mem_union.mp hi; solve_by_elim },
+      { rw finset.bInter_inter, cc } } },
+  { rintro ⟨t, ht, rfl⟩,
+    refine closed_under_finite_inters_finite_inter_closure.mem_bInter (λ i hi, _),
+    apply finite_inter_closure.basic,
+    exact ht i hi }
+end
 
 end finite_inters
 
