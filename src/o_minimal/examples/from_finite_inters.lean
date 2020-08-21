@@ -56,7 +56,7 @@ structure finite_inter_struc_hypotheses : Prop :=
 variables {D B P}
 
 -- Strategy: Conclude `finite_union_struc_hypotheses D B`.
--- First we work under the assumption that B actually is finite_inter_closure P.
+-- First we work under the assumption that `B` actually is `finite_inter_closure P`.
 
 local notation `B₀` := (λ {n : ℕ}, finite_inter_closure (@P n))
 
