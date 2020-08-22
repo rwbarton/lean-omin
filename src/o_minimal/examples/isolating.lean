@@ -53,6 +53,8 @@ namespace isolated_constraint
 
 variables {F}
 
+-- TODO: should we use `fin.init x` instead of `F.extend_right`?
+-- (They're equal by hypothesis, but not definitionally.)
 def to_set {n : ℕ} :
   isolated_constraint F n → set (fin (n+1) → R)
 | tt := univ
@@ -124,5 +126,88 @@ begin
 end
 
 end simple
+
+-- Henceforth, we assume the family F is isolating.
+variables (hF : F.is_isolating)
+
+-- Next, we show how to put a collection of constraints into "triangular form".
+
+/-- The constraints on the last variable xₙ in a triangular form:
+either a single constraint of the form xₙ = f(x'),
+or two finite sets of constraints of the forms {gᵢ(x') < xₙ} and {xₙ < hⱼ(x')}.
+(Here as usual x' denotes the remaining variables.)
+
+No constraint (i.e. `true`) is represented by the second case, with empty sets.
+`false` is not represented here; instead it gets pushed down to the base case
+of the triangular form.
+-/
+inductive last_variable_constraints (n : ℕ) : Type u
+| eq (f : F n) : last_variable_constraints
+| between (L R : finset (F n)) : last_variable_constraints
+
+namespace last_variable_constraints
+
+variables {F}
+
+/-- The set defined by some last variable constraints. -/
+def to_set {n : ℕ} :
+  Π (c : last_variable_constraints F n), set (fin (n+1) → R)
+| (eq f) := {x | x (fin.last n) = f (fin.init x)}
+| (between L R) :=
+  {x | (∀ (g : F n), g ∈ L → g (fin.init x) < x (fin.last n)) ∧
+       (∀ (h : F n), h ∈ R → x (fin.last n) < h (fin.init x))}
+
+end last_variable_constraints
+
+/-- A conjunction of constraints in n variables in "triangular form".
+In the base case (n = 0) we have the logical constants true and false.
+In the inductive case of n+1 variables we have
+a conjunction of constraints on the last variable
+and a triangular system of constraints on the first n variables.
+-/
+inductive triangular_constraints : Π (n : ℕ), Type u
+| tt : triangular_constraints 0
+| ff : triangular_constraints 0
+| step {n : ℕ} :
+    last_variable_constraints F n → triangular_constraints n → triangular_constraints (n+1)
+
+namespace triangular_constraints
+
+variables {F}
+
+/-- The set defined by a triangular system of constraints. -/
+def to_set :
+  Π {n : ℕ} (t : triangular_constraints F n), set (fin n → R)
+| 0 tt := univ
+| 0 ff := ∅
+| (n+1) (step c t') := c.to_set ∩ {x | fin.init x ∈ t'.to_set}
+
+end triangular_constraints
+
+-- Now we prove that triangular systems of constraints
+-- have the same expressive power as arbitrary conjunctions of constraints.
+
+-- First we show that any set defined by a triangular system of constraints
+-- is also defined by a conjunction of constraints.
+
+/-
+lemma finite_inter_constrained_of_triangular {n : ℕ} (t : triangular_constraints F n) :
+  finite_inter_closure (constrained F) t.to_set :=
+-- TODO: Hang on, isn't this false? What do we plan to do with `ff : triangular_constraints 0`?
+-- well, here is a goofy way out:
+-- * if R is nonempty, then we can use `r < r` for some choice of `r : R`;
+-- * if R is empty, then we can use `univ` because then `univ = ∅`!
+-- Maybe the correct way to do this though would be to include `∅` as a "constrained" set.
+sorry
+-/
+
+-- To prove the reverse implication, it suffices to show that
+-- * a single constraint can be expressed as a triangular system [TODO];
+-- * the sets defined by triangular systems of constraints are closed under finite intersections.
+
+-- The idea is to combine the last variable constraints and handle the rest by induction.
+-- When combining two last variable constraints, we might face two equality constraints on xₙ.
+-- In this case, we keep one of them and push the equation between the two right hand sides
+-- to a constraint on the previous variables.
 
 end o_minimal
