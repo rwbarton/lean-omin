@@ -154,6 +154,10 @@ def to_set {n : ℕ} :
   {x | (∀ (g : F n), g ∈ lower → g (fin.init x) < x (fin.last n)) ∧
        (∀ (h : F n), h ∈ upper → x (fin.last n) < h (fin.init x))}
 
+@[simp]
+lemma to_set_empty_empty {n : ℕ} : (between ∅ ∅ : last_variable_constraints F n).to_set = univ :=
+by simp [to_set]
+
 end last_variable_constraints
 
 /-- A conjunction of constraints in n variables in "triangular form".
@@ -256,12 +260,117 @@ lemma triangular_constraints.to_set_basic :
 end
 
 -- To prove the reverse implication, it suffices to show that
--- * a single constraint can be expressed as a triangular system [TODO];
+-- * a single constraint can be expressed as a triangular system;
 -- * the sets defined by triangular systems of constraints are closed under finite intersections.
 
+section triangularize
+
+-- Preliminary constructions.
+
+def triangular_constraints.extend_right {n : ℕ} (t : triangular_constraints F n) :
+  triangular_constraints F (n+1) :=
+triangular_constraints.step (last_variable_constraints.between ∅ ∅) t
+
+@[simp]
+lemma triangular_constraints.to_set_extend_right {n : ℕ} {t : triangular_constraints F n} :
+  t.extend_right.to_set = {x | fin.init x ∈ t.to_set} :=
+by simp [triangular_constraints.extend_right, triangular_constraints.to_set]
+
+variables (F)
+
+def triangular_constraints.ff_n : Π (n : ℕ), triangular_constraints F n
+| 0 := triangular_constraints.ff
+| (n+1) := (triangular_constraints.ff_n n).extend_right
+
+def triangular_constraints.tt_n : Π (n : ℕ), triangular_constraints F n
+| 0 := triangular_constraints.tt
+| (n+1) := (triangular_constraints.tt_n n).extend_right
+
+variables {F}
+
+@[simp]
+lemma triangular_constraints.to_set_ff_n {n : ℕ} : (triangular_constraints.ff_n F n).to_set = ∅ :=
+begin
+  induction n with n ih,
+  { refl },
+  { simp [triangular_constraints.ff_n, ih] }
+end
+
+@[simp]
+lemma triangular_constraints.to_set_tt_n {n : ℕ} : (triangular_constraints.tt_n F n).to_set = univ :=
+begin
+  induction n with n ih,
+  { refl },
+  { simp [triangular_constraints.tt_n, ih] }
+end
+
+def triangular_constraints.last_variable_constraint {n : ℕ} (c : last_variable_constraints F n) :
+  triangular_constraints F (n+1) :=
+triangular_constraints.step c (triangular_constraints.tt_n F _)
+
+@[simp]
+lemma triangular_constraints.to_set_last_variable_constraint
+  {n : ℕ} {c : last_variable_constraints F n} :
+  (triangular_constraints.last_variable_constraint c).to_set = c.to_set :=
+by simp [triangular_constraints.to_set, triangular_constraints.last_variable_constraint]
+
+-- TODO: for_mathlib. Write a better proof.
+lemma eq_empty_or_univ {α : Type*} [subsingleton α] (s : set α) : s = ∅ ∨ s = univ :=
+begin
+  classical,
+  by_cases h : s = univ,
+  { exact or.inr h },
+  { left,
+    rw eq_empty_iff_forall_not_mem,
+    intro x,
+    contrapose! h,
+    ext y,
+    have : x = y, by cc,
+    subst y,
+    simp [h] }
+end
+
+include hF
+
+-- For the first part, we use the isolating property of F
+-- to describe s by an isolated constraint, working by induction.
+lemma triangular_constraint_of_constraint {n : ℕ} {s : set (fin n → R)} (hs : constrained F s) :
+  ∃ t : triangular_constraints F n, t.to_set = s :=
+begin
+  induction n with n IH,
+  { -- We use classical here, but it really just needs the decidability of = and < on R.
+    rcases eq_empty_or_univ s with rfl|rfl,
+    { exact ⟨triangular_constraints.ff, rfl⟩ },
+    { exact ⟨triangular_constraints.tt, rfl⟩ } },
+  { obtain ⟨i, rfl⟩ := hF hs, clear hs,
+    rcases i with _|_|h|h|h|⟨f,g⟩|⟨f,g⟩,
+    -- true or false; we built these earlier.
+    { exact ⟨triangular_constraints.tt_n F _, triangular_constraints.to_set_tt_n⟩ },
+    { exact ⟨triangular_constraints.ff_n F _, triangular_constraints.to_set_ff_n⟩ },
+    -- an isolated constraint involving the last variable.
+    { refine ⟨triangular_constraints.last_variable_constraint (last_variable_constraints.eq h), _⟩,
+      simp [last_variable_constraints.to_set, isolated_constraint.to_set] },
+    { refine ⟨triangular_constraints.last_variable_constraint (last_variable_constraints.between ∅ {h}), _⟩,
+      simp [last_variable_constraints.to_set, isolated_constraint.to_set] },
+    { refine ⟨triangular_constraints.last_variable_constraint (last_variable_constraints.between {h} ∅), _⟩,
+      simp [last_variable_constraints.to_set, isolated_constraint.to_set] },
+    -- a constraint that can be pushed down to the previous level, using the inductive hypothesis.
+    { obtain ⟨t, ht⟩ := IH (constrained.EQ f g),
+      refine ⟨t.extend_right, _⟩,
+      simp [ht, isolated_constraint.to_set] },
+    { obtain ⟨t, ht⟩ := IH (constrained.LT f g),
+      refine ⟨t.extend_right, _⟩,
+      simp [ht, isolated_constraint.to_set] } }
+end
+
+-- We already checked that sets described by triangular constraints
+-- are closed under nullary intersections (via `.tt_n`),
+-- so it remains to handle binary intersections.
 -- The idea is to combine the last variable constraints and handle the rest by induction.
 -- When combining two last variable constraints, we might face two equality constraints on xₙ.
 -- In this case, we keep one of them and push the equation between the two right hand sides
 -- to a constraint on the previous variables.
+
+end triangularize
 
 end o_minimal

@@ -60,6 +60,15 @@ instance has_coe_to_fun.function_family : has_coe_to_fun (function_family R) :=
 instance has_coe_to_fun.F (F : function_family R) (n : ℕ) : has_coe_to_fun (F n) :=
 ⟨_, F.to_fun n⟩
 
+-- TODO: Make judicious use of these lemmas
+@[simp] lemma function_family.extend_left_app (F : function_family R) {n : ℕ} {f : F n} {x} :
+  F.extend_left f x = f (fin.tail x) :=
+congr_fun (F.to_fun_extend_left f) x
+
+@[simp] lemma function_family.extend_right_app (F : function_family R) {n : ℕ} {f : F n} {x} :
+  F.extend_right f x = f (fin.init x) :=
+congr_fun (F.to_fun_extend_right f) x
+
 section simple
 
 -- Simple functions: just constants and coordinates.
