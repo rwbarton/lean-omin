@@ -380,6 +380,109 @@ end
 --   a single constraint can be put in triangular form).
 -- * Otherwise, both are between constraints and we can simply merge the sets.
 
+lemma triangular_constraints.inter {n : ℕ} : ∀ (t₁ t₂ : triangular_constraints F n),
+  ∃ t₃ : triangular_constraints F n, t₃.to_set = t₁.to_set ∩ t₂.to_set :=
+begin
+  induction n with n IH, { intros, exact triangular_constraints.zero }, change n.succ with n + 1,
+  -- Now equipped with the inductive hypothesis,
+  -- we handle the case of an equation as one of the last variable constraints.
+  have eq_case :
+    ∀ (f : F n) (t₁' : triangular_constraints F n) (t₂ : triangular_constraints F (n+1)),
+    ∃ t₃ : triangular_constraints F (n + 1),
+    t₃.to_set =
+      (triangular_constraints.step (last_variable_constraints.eq f) t₁').to_set ∩ t₂.to_set,
+  { intros f t₁' t₂,
+    set t₁ := triangular_constraints.step (last_variable_constraints.eq f) t₁',
+    rcases t₂ with _ | _ | ⟨_, c₂, t₂'⟩,
+    -- Using the equation that the last variable equals f applied to the earlier ones,
+    -- convert the last variable constraints of t₂ to constraints on only earlier variables.
+    -- (The new constraints cut out the same set as the old last variable constraints
+    -- at least when restricted to the set where t₁ holds.)
+    have : ∃ t₂'' : triangular_constraints F n,
+      t₁.to_set ∩ c₂.to_set = t₁.to_set ∩ {x | fin.init x ∈ t₂''.to_set},
+    { -- We actually only care about the equality on the last variable, not all of t₁.
+      suffices : ∃ t₂'' : triangular_constraints F n,
+        {x : fin (n + 1) → R | x (fin.last n) = f (fin.init x)} ∩ c₂.to_set =
+        {x : fin (n + 1) → R | x (fin.last n) = f (fin.init x)} ∩ {x | fin.init x ∈ t₂''.to_set},
+      { obtain ⟨t₂'', h⟩ := this,
+        refine ⟨t₂'', _⟩,
+        change (_ ∩ _) ∩ _ = (_ ∩ _) ∩ _,
+        conv_lhs { congr, rw inter_comm },
+        conv_rhs { congr, rw inter_comm },
+        rw [inter_assoc, inter_assoc],
+        congr' 1,
+        exact h },
+      rcases c₂ with f₂ | ⟨lower₂, upper₂⟩,
+      { -- Convert f(x) = f₂(x) into a triangular system.
+        obtain ⟨t, ht⟩ := triangular_constraints_of_constraint hF (constrained.EQ f f₂),
+        refine ⟨t, _⟩,
+        -- TODO: maybe borrow proof ideas from the other case
+        unfold last_variable_constraints.to_set,
+        convert_to
+          {x : fin (n + 1) → R | x (fin.last n) = f (fin.init x)} ∩
+          {x : fin (n + 1) → R | f (fin.init x) = f₂ (fin.init x)} =
+          {x : fin (n + 1) → R | x (fin.last n) = f (fin.init x)} ∩
+          {x : fin (n + 1) → R | fin.init x ∈ triangular_constraints.to_set _},
+        { ext x, simp only [mem_inter_iff, mem_set_of_eq], split; rintros ⟨_, _⟩; cc },
+        congr,
+        simp_rw ht,
+        refl },
+      { -- Convert each g(x) < f(x) for g ∈ lower₂, f(x) < h(x) for h ∈ upper₂
+        -- into a triangular system, and then combine them:
+        -- we can do this using the inductive hypothesis.
+        -- TODO: To do this we need to know that the class of sets described by triangular systems
+        -- is closed under finite intersections.
+        -- Our inductive hypothesis is a binary version of this.
+        -- We should probably refactor the statement of the lemma
+        -- so that the inductive hypothesis is instead of the more general form
+        -- because otherwise we're going to prove this again at top level anyways.
+        -- On the other hand, it's so easy maybe it's worth just duplicating it.
+        have : closed_under_finite_inters {s | ∃ t : triangular_constraints F n, t.to_set = s},
+        { refine { mem_univ := ⟨triangular_constraints.tt_n F n, by simp⟩, mem_inter := _ },
+          rintros _ _ ⟨t₁, rfl⟩ ⟨t₂, rfl⟩,
+          exact IH t₁ t₂ },
+        let S : set (fin n → R) :=
+          (⋂ (g : F n) (H : g ∈ lower₂), {x | g x < f x}) ∩
+          (⋂ (h : F n) (H : h ∈ upper₂), {x | f x < h x}),
+        obtain ⟨t, ht⟩ : ∃ t : triangular_constraints F n, t.to_set = S,
+        { apply this.mem_inter; apply this.mem_fInter,
+          { intros g H, exact triangular_constraints_of_constraint hF (constrained.LT g f) },
+          { intros h H, exact triangular_constraints_of_constraint hF (constrained.LT f h) } },
+        refine ⟨t, _⟩,
+        ext x,
+        simp only [mem_inter_iff, mem_set_of_eq],
+        apply and_congr_right,
+        intro hx,
+        simp [last_variable_constraints.to_set, hx, ht] } },
+    obtain ⟨t₂'', ht₂''⟩ := this,
+    -- Using the inductive hypothesis, combine the constraints t₁', t₂' and t₂''.
+    obtain ⟨t₃', ht₃' : t₃'.to_set = t₂''.to_set ∩ t₂'.to_set⟩ := IH t₂'' t₂',
+    obtain ⟨t₄', ht₄' : t₄'.to_set = t₁'.to_set ∩ t₃'.to_set⟩ := IH t₁' t₃',
+    refine ⟨triangular_constraints.step (last_variable_constraints.eq f) t₄', _⟩,
+    change _ = _ ∩ (_ ∩ _),
+    rw [←inter_assoc, ht₂''],
+    simp only [triangular_constraints.to_set, t₁, ht₂'', ht₃', ht₄'],
+    ext x,
+    simp only [mem_inter_iff, mem_set_of_eq],
+    tauto },
+  -- Main proof: case analysis on the constraints.
+  -- If either is an equality, apply eq_case, possibly after swapping the constraints.
+  intros t₁ t₂,
+  rcases t₁ with _ | _ | ⟨_, f₁ | ⟨lower₁, upper₁⟩, t₁'⟩, { apply eq_case },
+  rcases t₂ with _ | _ | ⟨_, f₂ | ⟨lower₂, upper₂⟩, t₂'⟩, { simp_rw [inter_comm], apply eq_case },
+  -- In the remaining case, both are between constraints.
+  obtain ⟨t₃', ht₃'⟩ := IH t₁' t₂',
+  classical,
+  refine
+    ⟨triangular_constraints.step
+      (last_variable_constraints.between (lower₁ ∪ lower₂) (upper₁ ∪ upper₂))
+      t₃', _⟩,
+  ext,
+  simp only [triangular_constraints.to_set, last_variable_constraints.to_set, ht₃'],
+  rw [finset.bInter_inter, finset.bInter_inter],
+  simp only [mem_inter_iff, mem_set_of_eq],
+  tauto
+end
 
 end triangularize
 
