@@ -126,7 +126,7 @@ hs.compl
 lemma def_set.imp {s t : X → Prop} (hs : def_set S {x : X | s x}) (ht : def_set S {x : X | t x}) :
   def_set S {x | s x → t x} :=
 begin
-  simp [classical.imp_iff_not_or], -- classical!
+  simp [imp_iff_not_or], -- classical!
   exact hs.not.or ht
 end
 
