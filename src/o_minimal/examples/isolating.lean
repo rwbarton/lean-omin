@@ -74,7 +74,7 @@ is equivalent to an isolated constraint. -/
 -- Currently `constrained` only exists as a `Prop`, should it be data?
 -- TODO: Should isolating_family be a mix-in?
 def function_family.is_isolating : Prop :=
-∀ {n : ℕ} {s : set (fin (n+1) → R)}, constrained F s →
+∀ ⦃n : ℕ⦄ ⦃s : set (fin (n+1) → R)⦄, constrained F s →
 ∃ (ic : isolated_constraint F n), ic.to_set = s
 
 section simple
@@ -141,6 +141,8 @@ of the triangular form.
 inductive last_variable_constraints (n : ℕ) : Type u
 | eq (f : F n) : last_variable_constraints
 | between (lower upper : finset (F n)) : last_variable_constraints
+-- Remark. We'll have to use classical to form the union of `finset`s.
+-- A constructive treatment could use lists instead.
 
 namespace last_variable_constraints
 
@@ -151,8 +153,8 @@ def to_set {n : ℕ} :
   Π (c : last_variable_constraints F n), set (fin (n+1) → R)
 | (eq f) := {x | x (fin.last n) = f (fin.init x)}
 | (between lower upper) :=
-  {x | (∀ (g : F n), g ∈ lower → g (fin.init x) < x (fin.last n)) ∧
-       (∀ (h : F n), h ∈ upper → x (fin.last n) < h (fin.init x))}
+    (⋂ (g : F n) (H : g ∈ lower), {x | g (fin.init x) < x (fin.last n)}) ∩
+    (⋂ (h : F n) (H : h ∈ upper), {x | x (fin.last n) < h (fin.init x)})
 
 @[simp]
 lemma to_set_empty_empty {n : ℕ} : (between ∅ ∅ : last_variable_constraints F n).to_set = univ :=
@@ -210,11 +212,6 @@ begin
 end
 | (last_variable_constraints.between lower upper) :=
 begin
-  convert_to finite_inter_closure (constrained F)
-    ((⋂ (g : F n) (H : g ∈ lower), {x | g (fin.init x) < x (fin.last n)}) ∩
-     (⋂ (h : F n) (H : h ∈ upper), {x | x (fin.last n) < h (fin.init x)})),
-  { ext x,
-    simp [last_variable_constraints.to_set] },
   apply finite_inter_closure.inter;
     refine closed_under_finite_inters_finite_inter_closure.mem_fInter _ _;
     intros i _;
@@ -330,18 +327,27 @@ begin
     simp [h] }
 end
 
+/-- Any subset of R⁰ = * can be described by a triangular system of constraints. -/
+lemma triangular_constraints.zero {s : set (fin 0 → R)} :
+  ∃ t : triangular_constraints F 0, t.to_set = s :=
+begin
+  -- We use classical here.
+  -- If we carried a `constrained F s` hypothesis around,
+  -- we'd see it really just needs the decidability of = and < on R.
+  rcases eq_empty_or_univ s with rfl|rfl,
+  { exact ⟨triangular_constraints.ff, rfl⟩ },
+  { exact ⟨triangular_constraints.tt, rfl⟩ }
+end
+
 include hF
 
 -- For the first part, we use the isolating property of F
 -- to describe s by an isolated constraint, working by induction.
-lemma triangular_constraint_of_constraint {n : ℕ} {s : set (fin n → R)} (hs : constrained F s) :
+lemma triangular_constraints_of_constraint {n : ℕ} {s : set (fin n → R)} (hs : constrained F s) :
   ∃ t : triangular_constraints F n, t.to_set = s :=
 begin
   induction n with n IH,
-  { -- We use classical here, but it really just needs the decidability of = and < on R.
-    rcases eq_empty_or_univ s with rfl|rfl,
-    { exact ⟨triangular_constraints.ff, rfl⟩ },
-    { exact ⟨triangular_constraints.tt, rfl⟩ } },
+  { exact triangular_constraints.zero },
   { obtain ⟨i, rfl⟩ := hF hs, clear hs,
     rcases i with _|_|h|h|h|⟨f,g⟩|⟨f,g⟩,
     -- true or false; we built these earlier.
@@ -367,9 +373,13 @@ end
 -- are closed under nullary intersections (via `.tt_n`),
 -- so it remains to handle binary intersections.
 -- The idea is to combine the last variable constraints and handle the rest by induction.
--- When combining two last variable constraints, we might face two equality constraints on xₙ.
--- In this case, we keep one of them and push the equation between the two right hand sides
--- to a constraint on the previous variables.
+-- For the last variable constraints, there are two possibilities.
+-- * If at least one is an equality constraint, we pick one such and keep it
+--   and use it to rewrite the other constraint(s) in terms of earlier variables
+--   (using the inductive hypothesis and the fact we've already shown that
+--   a single constraint can be put in triangular form).
+-- * Otherwise, both are between constraints and we can simply merge the sets.
+
 
 end triangularize
 
