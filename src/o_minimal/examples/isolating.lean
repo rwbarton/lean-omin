@@ -369,8 +369,8 @@ begin
       simp [ht, isolated_constraint.to_set] } }
 end
 
--- We already checked that sets described by triangular constraints
--- are closed under nullary intersections (via `.tt_n`),
+-- Now we show the sets described by triangular constraints are closed under finite intersections.
+-- We already checked nullary intersections (via `.tt_n`),
 -- so it remains to handle binary intersections.
 -- The idea is to combine the last variable constraints and handle the rest by induction.
 -- For the last variable constraints, there are two possibilities.
@@ -380,10 +380,12 @@ end
 --   a single constraint can be put in triangular form).
 -- * Otherwise, both are between constraints and we can simply merge the sets.
 
-lemma triangular_constraints.inter {n : ℕ} : ∀ (t₁ t₂ : triangular_constraints F n),
-  ∃ t₃ : triangular_constraints F n, t₃.to_set = t₁.to_set ∩ t₂.to_set :=
+lemma triangular_constraints.closed_under_finite_intersections {n : ℕ} :
+  closed_under_finite_inters {s | ∃ t : triangular_constraints F n, t.to_set = s} :=
 begin
-  induction n with n IH, { intros, exact triangular_constraints.zero }, change n.succ with n + 1,
+  induction n with n IH;
+    refine { mem_univ := ⟨triangular_constraints.tt_n F _, by simp⟩, mem_inter := _ },
+  { intros, exact triangular_constraints.zero }, change n.succ with n + 1,
   -- Now equipped with the inductive hypothesis,
   -- we handle the case of an equation as one of the last variable constraints.
   have eq_case :
@@ -407,9 +409,8 @@ begin
       { obtain ⟨t₂'', h⟩ := this,
         refine ⟨t₂'', _⟩,
         change (_ ∩ _) ∩ _ = (_ ∩ _) ∩ _,
-        conv_lhs { congr, rw inter_comm },
-        conv_rhs { congr, rw inter_comm },
-        rw [inter_assoc, inter_assoc],
+        conv_lhs { rw ←inter_right_comm },
+        conv_rhs { rw ←inter_right_comm },
         congr' 1,
         exact h },
       rcases c₂ with f₂ | ⟨lower₂, upper₂⟩,
@@ -430,22 +431,11 @@ begin
       { -- Convert each g(x) < f(x) for g ∈ lower₂, f(x) < h(x) for h ∈ upper₂
         -- into a triangular system, and then combine them:
         -- we can do this using the inductive hypothesis.
-        -- TODO: To do this we need to know that the class of sets described by triangular systems
-        -- is closed under finite intersections.
-        -- Our inductive hypothesis is a binary version of this.
-        -- We should probably refactor the statement of the lemma
-        -- so that the inductive hypothesis is instead of the more general form
-        -- because otherwise we're going to prove this again at top level anyways.
-        -- On the other hand, it's so easy maybe it's worth just duplicating it.
-        have : closed_under_finite_inters {s | ∃ t : triangular_constraints F n, t.to_set = s},
-        { refine { mem_univ := ⟨triangular_constraints.tt_n F n, by simp⟩, mem_inter := _ },
-          rintros _ _ ⟨t₁, rfl⟩ ⟨t₂, rfl⟩,
-          exact IH t₁ t₂ },
         let S : set (fin n → R) :=
           (⋂ (g : F n) (H : g ∈ lower₂), {x | g x < f x}) ∩
           (⋂ (h : F n) (H : h ∈ upper₂), {x | f x < h x}),
         obtain ⟨t, ht⟩ : ∃ t : triangular_constraints F n, t.to_set = S,
-        { apply this.mem_inter; apply this.mem_fInter,
+        { apply IH.mem_inter; apply IH.mem_fInter,
           { intros g H, exact triangular_constraints_of_constraint hF (constrained.LT g f) },
           { intros h H, exact triangular_constraints_of_constraint hF (constrained.LT f h) } },
         refine ⟨t, _⟩,
@@ -456,8 +446,10 @@ begin
         simp [last_variable_constraints.to_set, hx, ht] } },
     obtain ⟨t₂'', ht₂''⟩ := this,
     -- Using the inductive hypothesis, combine the constraints t₁', t₂' and t₂''.
-    obtain ⟨t₃', ht₃' : t₃'.to_set = t₂''.to_set ∩ t₂'.to_set⟩ := IH t₂'' t₂',
-    obtain ⟨t₄', ht₄' : t₄'.to_set = t₁'.to_set ∩ t₃'.to_set⟩ := IH t₁' t₃',
+    -- TODO: Can probably be expressed more efficiently using new IH form.
+    -- Otherwise, maybe state a lemma for this IH.mem_inter ⟨_, rfl⟩ ⟨_, rfl⟩ pattern.
+    obtain ⟨t₃', ht₃' : t₃'.to_set = t₂''.to_set ∩ t₂'.to_set⟩ := IH.mem_inter ⟨t₂'', rfl⟩ ⟨t₂', rfl⟩,
+    obtain ⟨t₄', ht₄' : t₄'.to_set = t₁'.to_set ∩ t₃'.to_set⟩ := IH.mem_inter ⟨t₁', rfl⟩ ⟨t₃', rfl⟩,
     refine ⟨triangular_constraints.step (last_variable_constraints.eq f) t₄', _⟩,
     change _ = _ ∩ (_ ∩ _),
     rw [←inter_assoc, ht₂''],
@@ -467,11 +459,11 @@ begin
     tauto },
   -- Main proof: case analysis on the constraints.
   -- If either is an equality, apply eq_case, possibly after swapping the constraints.
-  intros t₁ t₂,
+  rintros _ _ ⟨t₁, rfl⟩ ⟨t₂, rfl⟩,
   rcases t₁ with _ | _ | ⟨_, f₁ | ⟨lower₁, upper₁⟩, t₁'⟩, { apply eq_case },
   rcases t₂ with _ | _ | ⟨_, f₂ | ⟨lower₂, upper₂⟩, t₂'⟩, { simp_rw [inter_comm], apply eq_case },
   -- In the remaining case, both are between constraints.
-  obtain ⟨t₃', ht₃'⟩ := IH t₁' t₂',
+  obtain ⟨t₃', ht₃'⟩ := IH.mem_inter ⟨t₁', rfl⟩ ⟨t₂', rfl⟩,
   classical,
   refine
     ⟨triangular_constraints.step
