@@ -476,6 +476,21 @@ begin
   tauto
 end
 
+-- Finally, summarize all the results of this section.
+
+/-- The sets described by triangular systems are the same as
+those defined by finitely many constraints. -/
+lemma triangular_constraints_iff {n : ℕ} (s : set (fin n → R)) :
+  finite_inter_closure (constrained F) s ↔ ∃ t : triangular_constraints F n, t.to_set = s :=
+begin
+  split,
+  { apply preserves_finite_inters_id.bind'
+      (triangular_constraints.closed_under_finite_intersections hF),
+    intros s hs,
+    exact triangular_constraints_of_constraint hF hs },
+  { rintros ⟨t, rfl⟩, exact t.to_set_basic }
+end
+
 end triangularize
 
 end o_minimal

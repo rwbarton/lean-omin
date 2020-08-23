@@ -152,17 +152,31 @@ structure preserves_finite_inters (Φ : set α → set β) : Prop :=
 (map_univ : Φ univ = univ)
 (map_inter : ∀ {s t}, Φ (s ∩ t) = Φ s ∩ Φ t)
 
-lemma preserves_finite_inters.bind {Φ : set α → set β} (hΦ : preserves_finite_inters Φ)
-  {A : set (set α)} {B : set (set β)} (h : ∀ s ∈ A, Φ s ∈ finite_inter_closure B) :
-  ∀ s ∈ finite_inter_closure A, Φ s ∈ finite_inter_closure B :=
+lemma preserves_finite_inters_id : preserves_finite_inters (id : set α → set α) :=
+by split; simp
+
+lemma preserves_finite_inters.bind' {Φ : set α → set β} (hΦ : preserves_finite_inters Φ)
+  {A : set (set α)} {B : set (set β)} (hB : closed_under_finite_inters B) (h : ∀ s ∈ A, Φ s ∈ B) :
+  ∀ s ∈ finite_inter_closure A, Φ s ∈ B :=
 begin
   apply finite_inter_closure.rec,
   { exact h },
-  { rw hΦ.map_univ, exact finite_inter_closure.univ },
+  { rw hΦ.map_univ, exact hB.mem_univ },
   { intros _ _ _ _ IHs IHt,     -- TODO: rcases -
     rw hΦ.map_inter,
-    exact IHs.inter IHt }
+    exact hB.mem_inter IHs IHt }
 end
+
+lemma preserves_finite_inters.bind {Φ : set α → set β} (hΦ : preserves_finite_inters Φ)
+  {A : set (set α)} {B : set (set β)} (h : ∀ s ∈ A, Φ s ∈ finite_inter_closure B) :
+  ∀ s ∈ finite_inter_closure A, Φ s ∈ finite_inter_closure B :=
+hΦ.bind' closed_under_finite_inters_finite_inter_closure h
+
+/-- If B is closed under finite intersections
+then A is contained in B if and only if its closure under finite intersections is. -/
+lemma subset_iff_finite_inter_closure_subset (hB : closed_under_finite_inters B) {A : set (set α)} :
+  A ⊆ B ↔ finite_inter_closure A ⊆ B :=
+⟨preserves_finite_inters_id.bind' hB, λ H, subset.trans closed_under_finite_inters_contains_self H⟩
 
 end finite_inters
 
