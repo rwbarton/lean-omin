@@ -75,7 +75,7 @@ end finite_unions
 
 section finite_inters
 
-variables {α : Type*} (B : set (set α))
+variables {α β : Type*} (B : set (set α))
 
 /-- The property of a family of sets being closed under finite intersections. -/
 structure closed_under_finite_inters : Prop :=
@@ -90,6 +90,7 @@ inductive finite_inter_closure : set (set α)
 
 variables {B}
 
+-- TODO: Fix name; this is actually mem_sInter or something
 lemma closed_under_finite_inters.mem_bInter (hB : closed_under_finite_inters B) {t : finset (set α)}
   (ht : ∀ i ∈ t, i ∈ B) : (⋂ i ∈ t, i) ∈ B :=
 begin
@@ -100,6 +101,18 @@ begin
   have h₁ : a ∈ B := ht a (finset.mem_insert_self a s),
   have h₂ : (⋂ i ∈ s, i) ∈ B := ih (λ i hi, ht i (finset.mem_insert_of_mem hi)),
   simpa using hB.mem_inter h₁ h₂
+end
+
+-- TODO: Naming?
+lemma closed_under_finite_inters.mem_fInter (hB : closed_under_finite_inters B)
+  {ι : Type*} {t : finset ι} (s : ι → set α) (hs : ∀ i ∈ t, s i ∈ B) : (⋂ i ∈ t, s i) ∈ B :=
+begin
+  classical,
+  revert hs,
+  refine finset.induction_on t (by simpa using hB.mem_univ) _,
+  intros a t' _ ih hs,           -- TODO: use rintros -
+  rw finset.bInter_insert,
+  apply hB.mem_inter (hs a (finset.mem_insert_self _ _)) (ih $ λ i hi, hs i (finset.mem_insert_of_mem hi))
 end
 
 /-- The closure of B under finite intersections is closed under finite intersections. -/
@@ -133,6 +146,22 @@ begin
     refine closed_under_finite_inters_finite_inter_closure.mem_bInter (λ i hi, _),
     apply finite_inter_closure.basic,
     exact ht i hi }
+end
+
+structure preserves_finite_inters (Φ : set α → set β) : Prop :=
+(map_univ : Φ univ = univ)
+(map_inter : ∀ {s t}, Φ (s ∩ t) = Φ s ∩ Φ t)
+
+lemma preserves_finite_inters.bind {Φ : set α → set β} (hΦ : preserves_finite_inters Φ)
+  {A : set (set α)} {B : set (set β)} (h : ∀ s ∈ A, Φ s ∈ finite_inter_closure B) :
+  ∀ s ∈ finite_inter_closure A, Φ s ∈ finite_inter_closure B :=
+begin
+  apply finite_inter_closure.rec,
+  { exact h },
+  { rw hΦ.map_univ, exact finite_inter_closure.univ },
+  { intros _ _ _ _ IHs IHt,     -- TODO: rcases -
+    rw hΦ.map_inter,
+    exact IHs.inter IHt }
 end
 
 end finite_inters

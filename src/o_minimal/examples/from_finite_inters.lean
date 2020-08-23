@@ -70,15 +70,7 @@ from λ n s hs, -- TODO: Lean bug? `H.definable_iff_finite_union_basic.mpr` shou
 have promote_hypothesis : ∀ {n m : ℕ} (Φ : set (fin n → R) → set (fin m → R))
   (hΦ₀ : Φ univ = univ) (hΦ₂ : ∀ {s t}, Φ (s ∩ t) = Φ s ∩ Φ t),
   (∀ ⦃s⦄, P s → B₀ (Φ s)) → (∀ ⦃s⦄, B₀ s → B₀ (Φ s)),
-begin
-  intros n m Φ hΦ₀ hΦ₂ h,
-  apply finite_inter_closure.rec,
-  { exact @h },
-  { rw hΦ₀, apply finite_inter_closure.univ },
-  { intros s t _ _ hs ht,       -- TODO: rcases -
-    rw hΦ₂,
-    apply hs.inter ht }
-end,
+from λ n m Φ hΦ₀ hΦ₂, preserves_finite_inters.bind { map_univ := @hΦ₀, map_inter := @hΦ₂ },
 { definable_iff_finite_union_basic := H.definable_iff_finite_union_basic,
   definable_univ := λ n, definable_of_basic finite_inter_closure.univ,
   definable_basic_inter_basic := λ n s t hs ht, definable_of_basic (hs.inter ht),

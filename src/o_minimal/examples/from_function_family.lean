@@ -3,6 +3,8 @@ import o_minimal.examples.from_finite_inters
 
 namespace o_minimal
 
+open_locale finvec
+
 universe u
 
 variables (R : Type u)
@@ -137,7 +139,82 @@ inductive constrained {n : ℕ} : set (fin n → R) → Prop
 | EQ (f g : F n) : constrained {x | f x = g x}
 | LT (f g : F n) : constrained {x | f x < g x}
 
-variables (D B P : Π ⦃n : ℕ⦄, set (set (fin n → R)))
+variables {F}
+
+lemma constrained.r_prod {n : ℕ} {s : set (fin n → R)} (hs : constrained F s) :
+  constrained F (U 1 ⊠ s) :=
+begin
+  rcases hs with ⟨f,g⟩|⟨f,g⟩,
+  { convert constrained.EQ (F.extend_left f) (F.extend_left g) using 1,
+    { exact add_comm _ _ },
+    { convert finvec.r_prod_eq,
+      ext x,
+      -- TODO: add lemma for extend_left stated in terms of coercions
+      change F.to_fun _ (F.extend_left f) x = F.to_fun _ (F.extend_left g) x ↔ _,
+      rw [F.to_fun_extend_left, F.to_fun_extend_left],
+      refl } },
+  { convert constrained.LT (F.extend_left f) (F.extend_left g) using 1,
+    { exact add_comm _ _ },
+    { convert finvec.r_prod_eq,
+      ext x,
+      change F.to_fun _ (F.extend_left f) x < F.to_fun _ (F.extend_left g) x ↔ _,
+      rw [F.to_fun_extend_left, F.to_fun_extend_left],
+      refl } },
+end
+
+lemma constrained.prod_r {n : ℕ} {s : set (fin n → R)} (hs : constrained F s) :
+  constrained F (s ⊠ U 1) :=
+begin
+  rcases hs with ⟨f,g⟩|⟨f,g⟩,
+  { convert constrained.EQ (F.extend_right f) (F.extend_right g),
+    convert finvec.prod_r_eq,
+    ext x,
+    -- TODO: add lemma for extend_right stated in terms of coercions
+    change F.to_fun _ (F.extend_right f) x = F.to_fun _ (F.extend_right g) x ↔ _,
+    rw [F.to_fun_extend_right, F.to_fun_extend_right],
+    refl },
+  { convert constrained.LT (F.extend_right f) (F.extend_right g) using 1,
+    convert finvec.prod_r_eq,
+    ext x,
+    change F.to_fun _ (F.extend_right f) x < F.to_fun _ (F.extend_right g) x ↔ _,
+    rw [F.to_fun_extend_right, F.to_fun_extend_right],
+    refl },
+end
+
+-- TODO: for_mathlib
+@[simp] lemma lt_self_iff_false {α : Type*} [preorder α] (x : α) : (x < x) ↔ false :=
+by { rw iff_false, exact lt_irrefl x }
+
+section empty
+
+/-
+The assumption that R is nonempty is annoying, mainly because it shouldn't really be needed.
+The problem is that it's *almost* true that the projection of a basic set is basic,
+if we define a basic set to be a finite intersection of constrained ones,
+and in the structure defined by just (R, <), for example.
+The issue is that ∅ = {x | x < x} ⊆ R¹ is basic, but its projection to R⁰ is not basic,
+because there are no simple functions at all on R⁰ when R is empty!
+It is still definable though, as the empty union.
+
+Options for dealing with this include:
+0. [the current choice] Just assume R is nonempty here, because it eventually will be anyways.
+1. Work with "basic or empty" sets in the context of isolating families.
+2. Include `empty` as another constructor of `constrained`,
+   and let it affect the definition of the eventual definable sets.
+3. Include `empty` as another constructor of `constrained`,
+   but then prove we get the same definable sets in the end as if it didn't exist.
+   (Especially if we only add `constrained.empty` for `n = 0`, this doesn't seem too taxing.)
+-/
+lemma constrained.empty [h : nonempty R] {n : ℕ} : constrained F (∅ : set (fin n → R)) :=
+begin
+  casesI h with r,
+  convert constrained.LT (F.const r) (F.const r),
+  simp
+end
+
+end empty
+
+variables (F) (D B P : Π ⦃n : ℕ⦄, set (set (fin n → R)))
 
 /-- Hypotheses for a structure. -/
 structure function_family_struc_hypotheses : Prop :=
@@ -181,40 +258,8 @@ from λ n s hs,
       { exact constrained.EQ f g },
       { exact constrained.LT g f } }
   end,
-  basic_r_prod_primitive := begin
-    rintros n s (⟨f,g⟩|⟨f,g⟩); apply basic_of_constrained,
-    { convert constrained.EQ (F.extend_left f) (F.extend_left g) using 1,
-      { exact add_comm _ _ },
-      { convert finvec.r_prod_eq,
-        ext x,
-        -- TODO: add lemma for extend_left stated in terms of coercions
-        change F.to_fun _ (F.extend_left f) x = F.to_fun _ (F.extend_left g) x ↔ _,
-        rw [F.to_fun_extend_left, F.to_fun_extend_left],
-        refl } },
-    { convert constrained.LT (F.extend_left f) (F.extend_left g) using 1,
-      { exact add_comm _ _ },
-      { convert finvec.r_prod_eq,
-        ext x,
-        change F.to_fun _ (F.extend_left f) x < F.to_fun _ (F.extend_left g) x ↔ _,
-        rw [F.to_fun_extend_left, F.to_fun_extend_left],
-        refl } },
-  end,
-  basic_primitive_prod_r := begin
-    rintros n s (⟨f,g⟩|⟨f,g⟩); apply basic_of_constrained,
-    { convert constrained.EQ (F.extend_right f) (F.extend_right g),
-      convert finvec.prod_r_eq,
-      ext x,
-      -- TODO: add lemma for extend_right stated in terms of coercions
-      change F.to_fun _ (F.extend_right f) x = F.to_fun _ (F.extend_right g) x ↔ _,
-      rw [F.to_fun_extend_right, F.to_fun_extend_right],
-      refl },
-    { convert constrained.LT (F.extend_right f) (F.extend_right g) using 1,
-      convert finvec.prod_r_eq,
-      ext x,
-      change F.to_fun _ (F.extend_right f) x < F.to_fun _ (F.extend_right g) x ↔ _,
-      rw [F.to_fun_extend_right, F.to_fun_extend_right],
-      refl },
-  end,
+  basic_r_prod_primitive := λ n s hs, basic_of_constrained hs.r_prod,
+  basic_primitive_prod_r := λ n s hs, basic_of_constrained hs.prod_r,
   definable_eq_outer := λ n,
     (function_family_struc_hypotheses.definable_iff_finite_union_basic H).mpr $
     finite_union_closure.basic $

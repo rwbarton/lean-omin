@@ -30,6 +30,7 @@ Examples:
 namespace o_minimal
 
 open set
+open_locale finvec
 
 universe u
 
@@ -99,10 +100,6 @@ begin
     refine or.inl rfl }
 end
 
--- TODO: for_mathlib
-@[simp] lemma lt_self_iff_false {α : Type*} [preorder α] (x : α) : (x < x) ↔ false :=
-by { rw iff_false, exact lt_irrefl x }
-
 lemma simple_function_family_is_isolating : (simple_function_family R).is_isolating :=
 begin
   -- Analyze the given constraint and push down the functions if possible: 8 cases
@@ -143,7 +140,7 @@ of the triangular form.
 -/
 inductive last_variable_constraints (n : ℕ) : Type u
 | eq (f : F n) : last_variable_constraints
-| between (L R : finset (F n)) : last_variable_constraints
+| between (lower upper : finset (F n)) : last_variable_constraints
 
 namespace last_variable_constraints
 
@@ -153,9 +150,9 @@ variables {F}
 def to_set {n : ℕ} :
   Π (c : last_variable_constraints F n), set (fin (n+1) → R)
 | (eq f) := {x | x (fin.last n) = f (fin.init x)}
-| (between L R) :=
-  {x | (∀ (g : F n), g ∈ L → g (fin.init x) < x (fin.last n)) ∧
-       (∀ (h : F n), h ∈ R → x (fin.last n) < h (fin.init x))}
+| (between lower upper) :=
+  {x | (∀ (g : F n), g ∈ lower → g (fin.init x) < x (fin.last n)) ∧
+       (∀ (h : F n), h ∈ upper → x (fin.last n) < h (fin.init x))}
 
 end last_variable_constraints
 
@@ -186,20 +183,77 @@ end triangular_constraints
 
 -- Now we prove that triangular systems of constraints
 -- have the same expressive power as arbitrary conjunctions of constraints.
+-- For technical reasons we now assume `R` is nonempty (see `constrained.empty`).
+variables [nonempty R]
 
 -- First we show that any set defined by a triangular system of constraints
--- is also defined by a conjunction of constraints.
+-- is also defined by a conjunction of constraints ("basic").
 
-/-
-lemma finite_inter_constrained_of_triangular {n : ℕ} (t : triangular_constraints F n) :
-  finite_inter_closure (constrained F) t.to_set :=
--- TODO: Hang on, isn't this false? What do we plan to do with `ff : triangular_constraints 0`?
--- well, here is a goofy way out:
--- * if R is nonempty, then we can use `r < r` for some choice of `r : R`;
--- * if R is empty, then we can use `univ` because then `univ = ∅`!
--- Maybe the correct way to do this though would be to include `∅` as a "constrained" set.
-sorry
--/
+variables {F}
+
+lemma last_variable_constraints.to_set_basic {n : ℕ} :
+  ∀ (c : last_variable_constraints F n),
+  finite_inter_closure (constrained F) c.to_set
+| (last_variable_constraints.eq f) :=
+begin
+  apply finite_inter_closure.basic,
+  convert constrained.EQ (F.coord (fin.last n)) (F.extend_right f),
+  ext x,
+  -- TODO: simplify this proof
+  change x (fin.last n) = f (fin.init x) ↔ F.to_fun _ (F.coord (fin.last n)) x = F.to_fun _ (F.extend_right f) x,
+  rw [F.to_fun_coord, F.to_fun_extend_right],
+  refl
+end
+| (last_variable_constraints.between lower upper) :=
+begin
+  convert_to finite_inter_closure (constrained F)
+    ((⋂ (g : F n) (H : g ∈ lower), {x | g (fin.init x) < x (fin.last n)}) ∩
+     (⋂ (h : F n) (H : h ∈ upper), {x | x (fin.last n) < h (fin.init x)})),
+  { ext x,
+    simp [last_variable_constraints.to_set] },
+  apply finite_inter_closure.inter;
+    refine closed_under_finite_inters_finite_inter_closure.mem_fInter _ _;
+    intros i _;
+    apply finite_inter_closure.basic,                 -- TODO: use rintros -
+  { change constrained F _,
+    convert constrained.LT (F.extend_right i) (F.coord (fin.last n)),
+    ext x,
+    -- TODO: simplify this proof
+    change _ ↔ F.to_fun _ (F.extend_right i) x < F.to_fun _ (F.coord (fin.last n)) x,
+    rw [F.to_fun_coord, F.to_fun_extend_right],
+    refl },
+  { change constrained F _,
+    convert constrained.LT (F.coord (fin.last n)) (F.extend_right i),
+    ext x,
+    -- TODO: simplify this proof
+    change _ ↔ F.to_fun _ (F.coord (fin.last n)) x < F.to_fun _ (F.extend_right i) x,
+    rw [F.to_fun_coord, F.to_fun_extend_right],
+    refl },
+end
+
+lemma triangular_constraints.to_set_basic :
+  ∀ {n : ℕ} (t : triangular_constraints F n),
+  finite_inter_closure (constrained F) t.to_set
+| 0 triangular_constraints.tt := finite_inter_closure.univ
+| 0 triangular_constraints.ff := finite_inter_closure.basic constrained.empty
+| (n+1) (triangular_constraints.step c t') := begin
+  refine finite_inter_closure.inter c.to_set_basic _,
+  have IH : finite_inter_closure (constrained F) t'.to_set := t'.to_set_basic,
+  -- TODO: move this somewhere sensible
+  have rw_me : {x : fin (n+1) → R | fin.init x ∈ t'.to_set} = t'.to_set ⊠ U 1,
+  { ext x,
+    simp [finvec.external_prod_def], refl },
+  change finite_inter_closure (constrained F) {x : fin (n + 1) → R | fin.init x ∈ t'.to_set},
+  rw rw_me,
+  -- TODO: move this somewhere sensible. Copied from `from_finite_inters`.
+  have : preserves_finite_inters (λ s : set (fin n → R), s ⊠ U 1) := begin
+    split; intros; ext; simp [finvec.external_prod_def]
+  end,
+  refine this.bind _ t'.to_set IH,
+  { intros s hs,
+    apply finite_inter_closure.basic,
+    exact hs.prod_r }
+end
 
 -- To prove the reverse implication, it suffices to show that
 -- * a single constraint can be expressed as a triangular system [TODO];
