@@ -1,4 +1,5 @@
 import o_minimal.examples.from_function_family
+import o_minimal.o_minimal
 
 /-
 A function family on a linear order R is *isolating*
@@ -34,8 +35,12 @@ open_locale finvec
 
 universe u
 
-variables {R : Type u} [linear_order R]
+variables {R : Type u}
 variables (F : function_family R)
+
+section linear_order
+
+variables [linear_order R]
 
 /-- An isolated form for a constraint in n+1 variables:
 either the last variable stands alone on one side of the constraint
@@ -187,6 +192,8 @@ def to_set :
 
 end triangular_constraints
 
+section triangularize
+
 -- Now we prove that triangular systems of constraints
 -- have the same expressive power as arbitrary conjunctions of constraints.
 -- For technical reasons we now assume `R` is nonempty (see `constrained.empty`).
@@ -259,8 +266,6 @@ end
 -- To prove the reverse implication, it suffices to show that
 -- * a single constraint can be expressed as a triangular system;
 -- * the sets defined by triangular systems of constraints are closed under finite intersections.
-
-section triangularize
 
 -- Preliminary constructions.
 
@@ -492,5 +497,113 @@ begin
 end
 
 end triangularize
+
+end linear_order
+
+section DUNLO
+
+section projection
+
+-- TODO: `fin.init` and `fin.snoc` aren't great, resulting in some awkward phrasing here;
+-- it's probably due to their dependent nature.
+-- Compare a hypothetical
+--   y ∈ fin.init '' s ↔ ∃ z : R, fin.snoc y z ∈ s
+lemma mem_image_fin_init {n : ℕ} {s : set (fin (n+1) → R)} {y : fin n → R} :
+  y ∈ s.image fin.init ↔ ∃ z : R, (fin.snoc y z : fin (n+1) → R) ∈ s :=
+begin
+  split; intro h,
+  { obtain ⟨x, hx, rfl⟩ := h,
+    refine ⟨x (fin.last n), _⟩,
+    simpa using hx },
+  { obtain ⟨z, hz⟩ := h,
+    refine ⟨fin.snoc y z, hz, _⟩,
+    simp }
+end
+
+variables [DUNLO R]
+
+-- TODO: for_mathlib
+lemma DUNLO_lemma (lower upper : finset R) :
+  (∃ x, (∀ g ∈ lower, g < x) ∧ (∀ h ∈ upper, x < h)) ↔
+  ∀ (g ∈ lower) (h ∈ upper), g < h :=
+begin
+  split,
+  { rintro ⟨x, hx₁, hx₂⟩ g Hg h Hh,
+    exact lt_trans (hx₁ g Hg) (hx₂ h Hh) },
+  { letI dlo := classical.DLO R,      -- TODO: This isn't implied by `classical`?
+    -- TODO: maybe reformulate all this into a useful lemma:
+    -- (s : finset R) : s = ∅ ∨ ∃ max ∈ s, ∀ i ∈ s, i ≤ max
+    -- Pretty similar to `exists_max_image`.
+    cases hlower : lower.max with lmax;
+      [{ rw finset.max_eq_none at hlower, subst lower },
+       { have le_lmax : ∀ g ∈ lower, g ≤ lmax,
+         { intros g H, apply finset.le_max_of_mem H hlower } }],
+    all_goals {                 -- TODO: can't we write it using `;`?
+    cases hupper : upper.min with umin;
+      [{ rw finset.min_eq_none at hupper, subst upper },
+       { have umin_le : ∀ h ∈ upper, umin ≤ h,
+         { intros h H, apply finset.min_le_of_mem H hupper } }] },
+    { simp },
+    { suffices : ∃ (x : R), ∀ (h : R), h ∈ upper → x < h, { simpa },
+      obtain ⟨x, hx⟩ := no_bot umin,
+      exact ⟨x, λ h H, lt_of_lt_of_le hx (umin_le h H)⟩ },
+    { suffices : ∃ (x : R), ∀ (g : R), g ∈ lower → g < x, { simpa },
+      obtain ⟨x, hx⟩ := no_top lmax,
+      exact ⟨x, λ g H, lt_of_le_of_lt (le_lmax g H) hx⟩ },
+    { intro Hgh,
+      specialize Hgh lmax (finset.mem_of_max hlower) umin (finset.mem_of_min hupper),
+      obtain ⟨x, hx₁, hx₂⟩ := dense Hgh,
+      exact ⟨x,
+        λ g H, lt_of_le_of_lt (le_lmax g H) hx₁,
+        λ h H, lt_of_lt_of_le hx₂ (umin_le h H)⟩ } }
+end
+
+variables (hF : F.is_isolating)
+include hF
+
+-- Now we show that the projection of the set described by a triangular system of constraints
+-- is again described by a triangular system of constraints.
+-- For this we need the hypothesis that R is a DUNLO.
+
+lemma triangular_projection {n : ℕ} (t : triangular_constraints F (n+1)) :
+  ∃ t' : triangular_constraints F n, t'.to_set = t.to_set.image fin.init :=
+begin
+  rcases t with _ | _ | ⟨_, f | ⟨lower, upper⟩, t⟩,
+  { -- Easy case: for an equality constraint,
+    -- there is always a (unique) way to extend to the last variable.
+    refine ⟨t, _⟩,
+    simp only [triangular_constraints.to_set, last_variable_constraints.to_set],
+    ext y,
+    -- TODO: use mem_image_fin_init?
+    split; intro h,
+    { refine ⟨fin.snoc y (f y), ⟨_, _⟩, _⟩; simp [h] },
+    { obtain ⟨x, hx, rfl⟩ := h,
+      exact hx.2 } },
+  { -- Harder case: for a between constraint,
+    -- the constraint is satisfiable for given values of the earlier variables
+    -- when all of the lower functions are less than all of the upper functions.
+    let S := (⋂ (g : F n) (Hg : g ∈ lower) (h : F n) (Hh : h ∈ upper), {x | g x < h x}) ∩ t.to_set,
+    have : ∃ t' : triangular_constraints F n, t'.to_set = S,
+    { refine (triangular_constraints.closed_under_finite_intersections hF).mem_inter _ ⟨t, rfl⟩,
+      apply (triangular_constraints.closed_under_finite_intersections hF).mem_fInter, intros g Hg,
+      apply (triangular_constraints.closed_under_finite_intersections hF).mem_fInter, intros h Hh,
+      apply triangular_constraints_of_constraint hF (constrained.LT g h) },
+    obtain ⟨t', ht'⟩ := this,
+    refine ⟨t', _⟩,
+    rw ht',
+    ext y,
+    rw mem_image_fin_init,
+    simp only [S, triangular_constraints.to_set, last_variable_constraints.to_set,
+      fin.snoc_last, mem_inter_eq, mem_Inter, exists_and_distrib_right, mem_set_of_eq, fin.init_snoc],
+    rw iff_iff_eq,
+    congr,
+    classical,
+    have := DUNLO_lemma (lower.image (λ (g : F n), g y)) (upper.image (λ (h : F n), h y)),
+    simpa only [←finset.mem_coe, finset.coe_image, ball_image_iff, iff_iff_eq] using this.symm }
+end
+
+end projection
+
+end DUNLO
 
 end o_minimal
