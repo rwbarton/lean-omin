@@ -496,11 +496,18 @@ begin
   { rintros ⟨t, rfl⟩, exact t.to_set_basic }
 end
 
+lemma triangular_constraints_iff' {n : ℕ} :
+  finite_inter_closure (constrained F) = {s | ∃ t : triangular_constraints F n, t.to_set = s} :=
+set.ext (triangular_constraints_iff hF)
+
 end triangularize
 
 end linear_order
 
 section DUNLO
+
+variables [DUNLO R]
+variables {F} (hF : F.is_isolating)
 
 section projection
 
@@ -519,8 +526,6 @@ begin
     refine ⟨fin.snoc y z, hz, _⟩,
     simp }
 end
-
-variables [DUNLO R]
 
 -- TODO: for_mathlib
 lemma DUNLO_lemma (lower upper : finset R) :
@@ -558,7 +563,6 @@ begin
         λ h H, lt_of_lt_of_le hx₂ (umin_le h H)⟩ } }
 end
 
-variables (hF : F.is_isolating)
 include hF
 
 -- Now we show that the projection of the set described by a triangular system of constraints
@@ -603,6 +607,55 @@ begin
 end
 
 end projection
+
+section o_minimal
+
+-- At long last, we can prove that an isolating family gives rise to an o-minimal structure.
+
+-- TODO: We should probably change all of these to use ⦃n⦄ binders
+variables (D B P : Π {n : ℕ}, set (fin n → R) → Prop)
+-- These could all just be `rfl`, but we build in the option of
+-- non-definitional equalities for more flexibility
+-- (possibly useless in this particular situation).
+variables (hD : @D = λ {n : ℕ}, finite_union_closure (@B n))
+variables (hB : @B = λ {n : ℕ}, finite_inter_closure (@P n))
+variables (hP : @P = λ {n : ℕ}, constrained F)
+include hD hB hP hF
+
+lemma function_family_struc_hypotheses_of_isolating :
+  function_family_struc_hypotheses F @D @B @P :=
+{ definable_iff_finite_union_basic := by { rw hD, intros, refl },
+  basic_iff_finite_inter_primitive := by { rw hB, intros, refl },
+  primitive_iff_constrained := by { rw hP, intros, refl },
+  definable_proj1_basic := begin
+    subst hP,
+    subst hB,
+    subst hD,
+    intros n s hs,
+    apply finite_union_closure.basic,
+    dsimp at hs ⊢,
+    rw triangular_constraints_iff' hF at hs ⊢,
+    obtain ⟨t, rfl⟩ := hs,
+    exact triangular_projection hF t
+  end }
+
+/-- The structure defined by an isolating family. We'll prove below that it's o-minimal. -/
+def struc_of_isolating : struc R :=
+struc_of_function_family $
+function_family_struc_hypotheses_of_isolating hF @D @B @P hD hB hP
+
+omit hD hB hP
+
+/-- The structure defined by an isolating family, with the default definition of definable sets. -/
+def struc_of_isolating' : struc R :=
+struc_of_isolating hF _ _ _ rfl rfl rfl
+
+lemma struc_of_isolating'_definable {n : ℕ} (s : set (fin n → R)) :
+  (struc_of_isolating' hF).definable s =
+  finite_union_closure (finite_inter_closure (constrained F)) s :=
+rfl
+
+end o_minimal
 
 end DUNLO
 
