@@ -196,4 +196,49 @@ lemma o_minimal_iff_vdD (S : struc R) : o_minimal S ↔
    definable_le' := (is_definable_le_of_definable_lt h₁).1,
    tame_of_def := λ s, (h₂ s).mp }⟩
 
+-- TODO: for_mathlib
+lemma function.const_injective {α β : Type*} [H : nonempty α] :
+  function.injective (function.const α : β → α → β) :=
+let ⟨a⟩ := H in λ b₁ b₂ h, congr_fun h a
+
+/-- An alternate constructor expressed in terms of low-level definability. -/
+lemma o_minimal.mk' (S : struc R)
+  (definable_lt : S.definable {x : fin 2 → R | x 0 < x 1})
+  (definable_const : ∀ (r : R), S.definable {x : fin 1 → R | x 0 = r})
+  (tame_of_definable :
+    ∀ (s : set (fin 1 → R)), S.definable s → tame {r | (λ _, r : fin 1 → R) ∈ s}) :
+  o_minimal S :=
+{ definable_val := begin
+    intro r,
+    unfold def_val def_set,
+    convert definable_const r,
+    apply set.ext,
+    simp_rw [set.mem_image],
+    change ∀ (x : fin 1 → R), _ ↔ x 0 = r,
+    rw (equiv.fun_unique (fin 1) R).forall_congr_left',
+    intro r',
+    simp only [equiv.fun_unique, equiv.coe_fn_symm_mk, set.mem_singleton_iff,
+      exists_eq_left, has_coordinates.self_coords, function.const_injective.eq_iff],
+    exact eq_comm
+  end,
+  definable_le' := begin
+    refine (is_definable_le_of_definable_lt _).1,
+    unfold def_val def_set,
+    convert definable_lt,
+    apply set.ext,
+    simp_rw [set.mem_image],
+    change ∀ (x : fin 2 → R), _ ↔ x 0 < x 1,
+    rw finvec.fin_two_fun_equiv_prod_self.forall_congr_left',
+    rintro ⟨x₀, x₁⟩,
+    change _ ↔ x₀ < x₁,
+    simp [has_coordinates.prod_coords, finvec.fin_two_fun_equiv_prod_self,
+      finvec.append.inj_iff, function.const_injective.eq_iff, ←and_assoc]
+  end,
+  tame_of_def := begin
+    intros s hs,
+    convert tame_of_definable _ hs,
+    ext x,
+    simp [function.const_injective.eq_iff]
+  end }
+
 end o_minimal

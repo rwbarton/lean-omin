@@ -1,5 +1,5 @@
 import for_mathlib.closure
-import o_minimal.structure
+import o_minimal.o_minimal
 
 /-
 Construction of (o-minimal) structures of the type:
@@ -53,7 +53,11 @@ structure finite_union_struc_hypotheses : Prop :=
 (definable_proj1_basic :
   ∀ {n} {s : set (fin (n+1) → R)}, B s → D (finvec.left '' s))
 
-variables {D B} (H : finite_union_struc_hypotheses D B)
+variables {D B}
+
+section struc
+
+variables (H : finite_union_struc_hypotheses D B)
 include H
 
 lemma finite_union_struc_hypotheses.D_eq_finite_union_closure_B :
@@ -124,5 +128,31 @@ def struc_of_finite_union : struc R :=
     refine H.promote_hypothesis (λ s, finvec.left '' s) _ _ (λ s h, H.definable_proj1_basic h);
     intros; ext; simp [image_union]
   end }
+
+end struc
+
+section o_minimal
+
+variables (D B) [DUNLO R]
+
+structure finite_union_o_minimal_hypotheses extends finite_union_struc_hypotheses D B : Prop :=
+(definable_lt : D {x : fin 2 → R | x 0 < x 1})
+(definable_const : ∀ {r}, D {x : fin 1 → R | x 0 = r})
+(tame_of_basic : ∀ {s : set (fin 1 → R)}, B s → tame {r | (λ _, r : fin 1 → R) ∈ s})
+
+variables {D B} (H : finite_union_o_minimal_hypotheses D B)
+
+lemma o_minimal_of_finite_union :
+  o_minimal (struc_of_finite_union H.to_finite_union_struc_hypotheses : struc R) :=
+o_minimal.mk' _ H.definable_lt H.definable_const $
+begin
+  change ∀ s, D s → _,
+  cases H.to_finite_union_struc_hypotheses.D_eq_finite_union_closure_B,
+  refine preserves_finite_unions.bind' _ closed_under_finite_unions_finite_union_closure _,
+  { split; intros; simp; refl },
+  exact H.tame_of_basic
+end
+
+end o_minimal
 
 end o_minimal

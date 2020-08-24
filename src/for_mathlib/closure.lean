@@ -71,6 +71,27 @@ begin
     exact ht i hi }
 end
 
+variables {β : Type*}
+
+structure preserves_finite_unions (Φ : set α → set β) : Prop :=
+(map_empty : Φ ∅ = ∅)
+(map_union : ∀ {s t}, Φ (s ∪ t) = Φ s ∪ Φ t)
+
+lemma preserves_finite_unions_id : preserves_finite_unions (id : set α → set α) :=
+by split; simp
+
+lemma preserves_finite_unions.bind' {Φ : set α → set β} (hΦ : preserves_finite_unions Φ)
+  {A : set (set α)} {B : set (set β)} (hB : closed_under_finite_unions B) (h : ∀ s ∈ A, Φ s ∈ B) :
+  ∀ s ∈ finite_union_closure A, Φ s ∈ B :=
+begin
+  apply finite_union_closure.rec,
+  { exact h },
+  { rw hΦ.map_empty, exact hB.mem_empty },
+  { intros _ _ _ _ IHs IHt,     -- TODO: rcases -
+    rw hΦ.map_union,
+    exact hB.mem_union IHs IHt }
+end
+
 end finite_unions
 
 section finite_inters

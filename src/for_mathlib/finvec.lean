@@ -1,5 +1,6 @@
 import data.equiv.fin
 import for_mathlib.fin
+import tactic.fin_cases
 
 namespace finvec
 
@@ -92,5 +93,11 @@ iff.rfl
 lemma append_mem_external_prod {n m : ℕ} (s : set (α^n)) (t : set (α^m)) (x : α^n) (y : α^m) :
   x ++ y ∈ s ⊠ t ↔ x ∈ s ∧ y ∈ t :=
 by rw [external_prod_def, append_left, append_right]
+
+def fin_two_fun_equiv_prod_self {α : Type*} : (fin 2 → α) ≃ α × α :=
+{ to_fun := λ f, (f 0, f 1),
+  inv_fun := λ p, finvec.append (λ _, p.1) (λ _, p.2),
+  left_inv := λ f, by { ext i, fin_cases i; refl },
+  right_inv := λ p, by { cases p, refl } }
 
 end finvec

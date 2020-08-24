@@ -36,6 +36,8 @@ open_locale finvec
 
 variables {R : Type*} (D B P : Π ⦃n : ℕ⦄, set (set (fin n → R)))
 
+section struc
+
 /-- Standing hypotheses for this module. -/
 structure finite_inter_struc_hypotheses : Prop :=
 (definable_iff_finite_union_basic :
@@ -124,5 +126,34 @@ by { cases H.B_eq_finite_inter_closure_P, exact key H }
 
 def struc_of_finite_inter : struc R :=
 struc_of_finite_union H.finite_union_struc_hypotheses
+
+end struc
+
+section o_minimal
+
+variables (D B P) [DUNLO R]
+
+structure finite_inter_o_minimal_hypotheses extends finite_inter_struc_hypotheses D B P : Prop :=
+(definable_lt : D {x : fin 2 → R | x 0 < x 1})
+(definable_const : ∀ {r}, D {x : fin 1 → R | x 0 = r})
+(tame_of_primitive : ∀ {s : set (fin 1 → R)}, P s → tame {r | (λ _, r : fin 1 → R) ∈ s})
+
+variables {D B P} (H : finite_inter_o_minimal_hypotheses D B P)
+
+lemma o_minimal_of_finite_inter :
+  o_minimal (struc_of_finite_inter H.to_finite_inter_struc_hypotheses : struc R) :=
+o_minimal_of_finite_union
+{ definable_lt := H.definable_lt,
+  definable_const := H.definable_const,
+  tame_of_basic := begin
+    change ∀ s, B s → _,
+    cases H.to_finite_inter_struc_hypotheses.B_eq_finite_inter_closure_P,
+    refine preserves_finite_inters.bind' _ closed_under_finite_inters_tame _,
+    { split; intros; simp; refl },
+    exact H.tame_of_primitive
+  end,
+  .. H.to_finite_inter_struc_hypotheses.finite_union_struc_hypotheses }
+
+end o_minimal
 
 end o_minimal
