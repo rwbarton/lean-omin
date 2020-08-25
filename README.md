@@ -2,6 +2,12 @@
 
 A project to formalize the theory of [o-minimal structures](https://en.wikipedia.org/wiki/O-minimal_theory) in Lean.
 
+## Current features
+
+* Semilinear sets form an o-minimal structure.
+
+* Lemma 1 of the monotonicity theorem.
+
 ## Directory layout
 
 * `src/omin` is a playground for new ideas,
