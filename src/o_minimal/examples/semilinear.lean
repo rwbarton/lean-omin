@@ -187,6 +187,8 @@ begin
       rw [add_left_comm, add_assoc], }, }
 end
 
+variables (K)
+
 lemma semilinear_function_family_is_isolating :
   (semilinear_function_family K K).is_isolating :=
 begin
@@ -199,5 +201,16 @@ begin
 end
 
 end semilinear
+
+variables (K' : Type u) [discrete_linear_ordered_field K']
+
+instance discrete_linear_ordered_field.DUNLO : DUNLO K' :=
+{ .. ‹discrete_linear_ordered_field K'› }
+
+def semilinear : struc K' :=
+struc_of_isolating' (semilinear_function_family_is_isolating K')
+
+lemma semilinear_o_minimal : o_minimal (semilinear K') :=
+by apply o_minimal_of_isolating
 
 end o_minimal
