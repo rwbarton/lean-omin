@@ -78,6 +78,9 @@ congr_fun (F.to_fun_extend_left f) x
   F.extend_right f x = f (fin.init x) :=
 congr_fun (F.to_fun_extend_right f) x
 
+@[simp] lemma function_family.to_fun_eq_coe (F : function_family R) {n : ℕ} {f : F n} :
+  F.to_fun n f = f := rfl
+
 section simple
 
 -- Simple functions: just constants and coordinates.
