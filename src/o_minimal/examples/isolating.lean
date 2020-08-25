@@ -655,7 +655,58 @@ lemma struc_of_isolating'_definable {n : ℕ} (s : set (fin n → R)) :
   finite_union_closure (finite_inter_closure (constrained F)) s :=
 rfl
 
+lemma o_minimal_of_isolating : o_minimal (struc_of_isolating hF @D @B @P hD hB hP) :=
+o_minimal_of_function_family
+{ tame_of_constrained := begin
+    intros s hs,
+    obtain ⟨ic, rfl⟩ := hF hs, clear hs,
+    rcases ic with _ | _ | h | h | h | ⟨f,g⟩ | ⟨f,g⟩,
+    { apply tame_univ },
+    { apply tame_empty },
+    { convert_to tame {r | r = h fin_zero_elim},
+      { ext r,
+        change r = _ ↔ r = h _,
+        rw [function_family.extend_right_app, iff_iff_eq],
+        congr },
+      exact tame_single (interval_or_point.pt _) },
+    { convert_to tame {r | r < h fin_zero_elim},
+      { ext r,
+        change r < _ ↔ r < h _,
+        rw [function_family.extend_right_app, iff_iff_eq],
+        congr },
+      exact tame_single (interval_or_point.Iio _) },
+    { convert_to tame {r | r > h fin_zero_elim},
+      { ext r,
+        change r > _ ↔ r > h _,
+        rw [function_family.extend_right_app, iff_iff_eq],
+        congr },
+      exact tame_single (interval_or_point.Ioi _) },
+    { convert_to tame {r | f fin_zero_elim = g fin_zero_elim},
+      { ext r,
+        change _ = _ ↔ _ = _,
+        rw [function_family.extend_right_app, function_family.extend_right_app, iff_iff_eq],
+        congr },
+      apply tame_const },
+    { convert_to tame {r | f fin_zero_elim < g fin_zero_elim},
+      { ext r,
+        change _ < _ ↔ _ < _,
+        rw [function_family.extend_right_app, function_family.extend_right_app, iff_iff_eq],
+        congr },
+      apply tame_const }
+  end,
+  .. function_family_struc_hypotheses_of_isolating hF @D @B @P hD hB hP }
+
 end o_minimal
+
+section simple
+
+/-- The structure defined by (R, <). -/
+def simple_struc : struc R := struc_of_isolating' simple_function_family_is_isolating
+
+/-- The structure defined by (R, <) is o-minimal. -/
+instance : o_minimal (simple_struc : struc R) := by apply o_minimal_of_isolating
+
+end simple
 
 end DUNLO
 

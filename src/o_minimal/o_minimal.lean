@@ -56,6 +56,19 @@ finite_union_closure_iff_bUnion
 lemma tame_single {i : set R} (h : interval_or_point i) : tame i :=
 finite_union_closure.basic h
 
+lemma tame_empty : tame (∅ : set R) :=
+finite_union_closure.empty
+
+lemma tame_univ : tame (set.univ : set R) :=
+tame_single interval_or_point.Iii
+
+lemma tame_const {p : Prop} : tame {r : R | p} :=
+begin
+  by_cases h : p,
+  { convert tame_univ, simp [h] },
+  { convert tame_empty, simp [h], refl }
+end
+
 -- TODO: for_mathlib. after finset.singleton_inter_of_not_mem. Fix proof.
 lemma set.singleton_inter_of_mem {α : Type*} {a : α} {s : set α} (h : a ∈ s) : {a} ∩ s = {a} :=
 by { ext x, simp [h], intro H, rwa H }

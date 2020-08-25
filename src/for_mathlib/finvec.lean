@@ -100,4 +100,12 @@ def fin_two_fun_equiv_prod_self {α : Type*} : (fin 2 → α) ≃ α × α :=
   left_inv := λ f, by { ext i, fin_cases i; refl },
   right_inv := λ p, by { cases p, refl } }
 
+-- TODO: it's impossible to use this lemma in simp or rw
+-- because the LHS is a variable!
+@[simp] lemma finvec_zero (x : fin 0 → α) : x = fin_zero_elim :=
+by { ext i, fin_cases i }
+
+instance : unique (fin 0 → α) :=
+⟨⟨fin_zero_elim⟩, finvec_zero⟩
+
 end finvec

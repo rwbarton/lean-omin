@@ -37,6 +37,7 @@ to make it easier to operate on the functions in a specific context
 (for example, to simplify constraints).
 
 TODO: Probably make argument `n` of `to_fun` implicit.
+TODO: These {n : ℕ} binders are really annoying.
 -/
 structure function_family : Type (u+1) :=
 (carrier : Π (n : ℕ), Type u)
@@ -61,6 +62,14 @@ instance has_coe_to_fun.F (F : function_family R) (n : ℕ) : has_coe_to_fun (F 
 ⟨_, F.to_fun n⟩
 
 -- TODO: Make judicious use of these lemmas
+@[simp] lemma function_family.const_app (F : function_family R) {n : ℕ} {r : R} {x : fin n → R} :
+  F.const r x = r :=
+congr_fun (function_family.to_fun_const F) x
+
+@[simp] lemma function_family.coord_app (F : function_family R) {n : ℕ} {i : fin n} {x} :
+  F.coord i x = x i :=
+congr_fun (function_family.to_fun_coord F) x
+
 @[simp] lemma function_family.extend_left_app (F : function_family R) {n : ℕ} {f : F n} {x} :
   F.extend_left f x = f (fin.tail x) :=
 congr_fun (F.to_fun_extend_left f) x
@@ -126,6 +135,8 @@ def simple_function_family : function_family R :=
 -- TODO: Add some simp lemmas, phrased in terms of coercions
 
 end simple
+
+section linear_order
 
 /-
 Now suppose that the type R has an ordering.
@@ -297,6 +308,32 @@ end
 def struc_of_function_family : struc R :=
 struc_of_finite_inter H.finite_inter_struc_hypotheses
 
--- TODO: definability of `≤`, constants; o-minimality.
+end linear_order
+
+section o_minimal
+
+variables {R} [DUNLO R] (F : function_family R) (D B P : Π ⦃n : ℕ⦄, set (set (fin n → R)))
+
+structure function_family_o_minimal_hypotheses extends function_family_struc_hypotheses F D B P : Prop :=
+(tame_of_constrained : ∀ {s : set (fin 1 → R)}, constrained F s → tame {r | (λ _, r : fin 1 → R) ∈ s})
+
+variables {F D B P} (H : function_family_o_minimal_hypotheses F D B P)
+
+lemma o_minimal_of_function_family :
+  o_minimal (struc_of_function_family H.to_function_family_struc_hypotheses) :=
+have definable_of_constrained : ∀ {n} {s : set (fin n → R)}, constrained F s → D s := λ n s hs,
+  -- TODO: This is terrible
+  (function_family_struc_hypotheses.definable_iff_finite_union_basic H.to_function_family_struc_hypotheses).mpr $
+  finite_union_closure.basic $
+  (function_family_struc_hypotheses.basic_iff_finite_inter_primitive H.to_function_family_struc_hypotheses).mpr $
+  finite_inter_closure.basic $
+  (function_family_struc_hypotheses.primitive_iff_constrained H.to_function_family_struc_hypotheses).mpr hs,
+o_minimal_of_finite_inter
+{ definable_lt := by simpa using definable_of_constrained (constrained.LT (F.coord 0) (F.coord 1)),
+  definable_const := λ r, by simpa using definable_of_constrained (constrained.EQ (F.coord 0) (F.const r)),
+  tame_of_primitive := λ s hs, by { rw H.primitive_iff_constrained at hs, exact H.tame_of_constrained hs },
+  .. H.to_function_family_struc_hypotheses.finite_inter_struc_hypotheses }
+
+end o_minimal
 
 end o_minimal
