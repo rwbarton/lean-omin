@@ -6,8 +6,7 @@ namespace o_minimal
 This is the setting in which we can talk about o-minimal structures.
 See [vdD], §1.3, first italicized paragraph.
 -/
--- TODO: does it matter whether we use `decidable_linear_order`?
-class DUNLO (R : Type*) extends linear_order R :=
+class DUNLO (R : Type*) extends decidable_linear_order R :=
 [dense : densely_ordered R]
 [unbounded_below : no_bot_order R]
 [unbounded_above : no_top_order R]

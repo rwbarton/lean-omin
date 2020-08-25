@@ -55,7 +55,19 @@ when `X` is a definable type. -/
 
 def def_set (s : set X) : Prop := S.definable (coords R '' s)
 
-variables {S} (X)
+variables {S}
+
+/-- The subtype of a definable type determined by a definable set is definable.
+Unfortunately, this can't be a global instance because of the hypothesis `hs`. -/
+def is_definable.subtype {s : set X} (hs : def_set S s) : is_definable S s :=
+{ definable := begin
+    unfold def_set at hs,
+    convert hs,
+    ext x,
+    simp [coordinate_image]
+  end }
+
+variables (X)
 
 lemma def_set_empty : def_set S (∅ : set X) :=
 begin
@@ -319,6 +331,12 @@ end
 lemma def_fun.prod {f : X → Z} {g : Y → W} (hf : def_fun S f) (hg : def_fun S g) :
   def_fun S (prod.map f g) :=
 (hf.comp def_fun.fst).prod' (hg.comp def_fun.snd)
+
+lemma def_fun_subtype_val {s : set X} {hs : def_set S s} :
+  by haveI := is_definable.subtype hs; exact
+  def_fun S (subtype.val : s → X) :=
+by haveI := is_definable.subtype hs; exact
+(is_reindexing.subtype.val R).def_fun
 
 lemma def_set_eq {f g : X → Y} (hf : def_fun S f) (hg : def_fun S g) :
   def_set S {x | f x = g x} :=

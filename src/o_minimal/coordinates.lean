@@ -202,6 +202,10 @@ lemma is_reindexing.coord {X : Type*} [cX : has_coordinates R X] (i : fin cX.amb
   is_reindexing R (λ x, coords R x i) :=
 ⟨λ _, i, λ x j, rfl⟩
 
+lemma is_reindexing.subtype.val {X : Type*} [cX : has_coordinates R X] {s : set X} :
+  is_reindexing R (subtype.val : s → X) :=
+⟨id, λ x j, rfl⟩
+
 end reindexing
 
 end o_minimal
