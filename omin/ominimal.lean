@@ -1,6 +1,6 @@
 import data.finset
 import data.set.finite
-import omin.algebra
+import .algebra
 
 -- Maybe a good idea to use intervals bounded by `option R` to handle ±∞?
 
@@ -75,5 +75,3 @@ variables (S : struc R) [definable_constants S] [definable_lt S]
 
 class o_minimal : Prop :=
 (tame_of_definable : ∀ (s : set R), S.definable_set s → tame_r s)
-
-#where

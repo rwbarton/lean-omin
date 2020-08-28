@@ -1,5 +1,5 @@
 import for_mathlib.finite
-import omin.ominimal
+import .ominimal
 
 open set
 

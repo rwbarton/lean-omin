@@ -10,7 +10,7 @@ A project to formalize the theory of [o-minimal structures](https://en.wikipedia
 
 ## Directory layout
 
-* `src/omin` is a playground for new ideas,
+* `omin` is a playground for new ideas,
   and may contain unfinished proofs or even definitions,
   temporary names, and so on.
 
@@ -18,7 +18,7 @@ A project to formalize the theory of [o-minimal structures](https://en.wikipedia
   and is supposed to avoid `sorry`,
   although it is still at a highly experimental phase.
 
-* `for_mathlib` contains supporting developments.
+* `src/for_mathlib` contains supporting developments.
 
 ## References
 

@@ -1,4 +1,4 @@
-import omin.ominimal
+import .ominimal
 import data.set.disjointed
 import data.setoid.partition
 

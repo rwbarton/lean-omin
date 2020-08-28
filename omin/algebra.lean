@@ -1,4 +1,4 @@
-import omin.structure
+import ..omin.structure
 import data.set.intervals
 
 -- compatibility of algebraic + order structures with a structure
