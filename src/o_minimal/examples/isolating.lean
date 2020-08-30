@@ -1,3 +1,4 @@
+import for_mathlib.nat
 import o_minimal.examples.from_function_family
 import o_minimal.o_minimal
 
@@ -388,9 +389,9 @@ end
 lemma triangular_constraints.closed_under_finite_intersections {n : ℕ} :
   closed_under_finite_inters {s | ∃ t : triangular_constraints F n, t.to_set = s} :=
 begin
-  induction n with n IH;
+  induction n using nat.rec_plus_one with n IH;
     refine { mem_univ := ⟨triangular_constraints.tt_n F _, by simp⟩, mem_inter := _ },
-  { intros, exact triangular_constraints.zero }, change n.succ with n + 1,
+  { intros, exact triangular_constraints.zero },
   -- Now equipped with the inductive hypothesis,
   -- we handle the case of an equation as one of the last variable constraints.
   have eq_case :

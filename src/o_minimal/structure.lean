@@ -5,6 +5,7 @@ import data.set.finite
 import data.set.lattice
 import for_mathlib.equiv
 import for_mathlib.finvec
+import for_mathlib.nat
 
 open set
 open_locale finvec
@@ -91,16 +92,14 @@ by { convert this finite_univ, simp },
 lemma struc.definable_rn_prod {m n : ℕ} {A : set (R^n)}
   (hA : S.definable A) : S.definable (U m ⊠ A) :=
 begin
-  -- TODO: induction principle for `nat` which uses `m + 1` rather than `nat.succ m`
-  induction m with m ih,
+  induction m using nat.rec_plus_one with m ih,
   { refine S.convert_definable hA (by apply zero_add) _,
     intro x,
     simp [finvec.external_prod_def, finvec.right_zero], },
-  { refine S.convert_definable (S.definable_r_prod ih) (by omega) _,
+  { refine S.convert_definable (S.definable_r_prod ih) (by abel) _,
     intro x,
     -- Big yikes
     repeat { rw finvec.external_prod_def },
-    dsimp only [nat.succ_eq_add_one],
     simp only [true_and, mem_univ],
     convert iff.rfl using 2,
     ext i,
