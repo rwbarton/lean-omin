@@ -1,4 +1,5 @@
 import for_mathlib.closure
+import for_mathlib.order
 import o_minimal.order
 
 namespace o_minimal
@@ -83,19 +84,11 @@ begin
     exact finite_union_closure.empty }
 end
 
-lemma with_bot.as_bot_or_coe {α : Type*} : ∀ (a : with_bot α), a = ⊥ ∨ ∃ (x : α), a = x
-| none := or.inl rfl
-| (some x) := or.inr ⟨x, rfl⟩
-
-lemma with_top.as_top_or_coe {α : Type*} : ∀ (a : with_top α), a = ⊤ ∨ ∃ (x : α), a = x
-| none := or.inl rfl
-| (some x) := or.inr ⟨x, rfl⟩
-
 lemma tame_IOO (a : with_bot R) (b : with_top R) :
   tame {x : R | a < ↑x ∧ ↑x < b} :=
 begin
-  rcases with_bot.as_bot_or_coe a with rfl|⟨a, rfl⟩;
-  rcases with_top.as_top_or_coe b with rfl|⟨b, rfl⟩;
+  induction a using with_bot.rec_bot_coe with a;
+  induction b using with_top.rec_top_coe with b;
   simp [with_bot.bot_lt_coe, with_top.coe_lt_top, with_bot.coe_lt_coe, with_top.coe_lt_coe],
   all_goals { try { { apply tame_single, constructor } } }, -- { { } }, because only do it if we're done.
   by_cases h : a < b,
