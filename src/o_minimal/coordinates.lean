@@ -198,6 +198,10 @@ begin
     exact (finvec.append_right _ _).symm }
 end
 
+lemma is_reindexing.coords {X : Type*} [cX : has_coordinates R X] :
+  is_reindexing R (λ (x : X), coords R x) :=
+⟨id, λ x j, rfl⟩
+
 lemma is_reindexing.coord {X : Type*} [cX : has_coordinates R X] (i : fin cX.ambdim) :
   is_reindexing R (λ x, coords R x i) :=
 ⟨λ _, i, λ x j, rfl⟩

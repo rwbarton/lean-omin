@@ -33,6 +33,15 @@ begin
   subst i
 end
 
+-- TODO: Generalize to [is_definable S X] : is_definable S (fin n → X)
+instance is_definable.rn {n : ℕ} : is_definable S (fin n → R) :=
+begin
+  constructor,
+  convert S.definable_univ n,
+  ext,
+  simp [coordinate_image]
+end
+
 variables {X : Type*} [has_coordinates R X] [is_definable S X]
 variables {Y : Type*} [has_coordinates R Y] [is_definable S Y]
 variables {Z : Type*} [has_coordinates R Z] [is_definable S Z]
@@ -142,6 +151,22 @@ begin
   exact hs.not.or ht
 end
 
+lemma def_set.forall_fintype {ι : Type*} [fintype ι] {t : ι → set X}
+  (ht : ∀ i, def_set S (t i)) : def_set S {x | ∀ i, x ∈ t i} :=
+begin
+  convert def_set_Inter ht using 1,
+  ext x,
+  simp
+end
+
+lemma def_set.exists_fintype {ι : Type*} [fintype ι] {t : ι → set X}
+  (ht : ∀ i, def_set S (t i)) : def_set S {x | ∃ i, x ∈ t i} :=
+begin
+  convert def_set_Union ht using 1,
+  ext x,
+  simp
+end
+
 lemma def_set.proj {s : set (X × Y)} (hs : def_set S s) : def_set S (prod.fst '' s) :=
 begin
   unfold def_set,
@@ -151,6 +176,8 @@ begin
   simp only [has_coordinates.prod_coords, finvec.append_left]
 end
 
+-- Is it better to use `{p : Y × X | s p.2 p.1}`?
+-- After all, Lean prefers to form `Z × Y × X = Z × (Y × X)`
 lemma def_set.exists {s : X → Y → Prop} (hs : def_set S {p : X × Y | s p.1 p.2}) :
   def_set S {x | ∃ y, s x y} :=
 begin
@@ -299,8 +326,14 @@ begin
   ext, simp
 end
 
+lemma def_fun.coords : def_fun S (λ x : X, coords R x) :=
+is_reindexing.def_fun (is_reindexing.coords R)
+
 lemma def_fun.coord (i : fin (has_coordinates.ambdim R X)) : def_fun S (λ x : X, coords R x i) :=
 is_reindexing.def_fun (is_reindexing.coord R i)
+
+lemma def_fun.coord_rn {n : ℕ} (i : fin n) : def_fun S (λ x : fin n → R, x i) :=
+def_fun.coord i
 
 lemma def_fun.fst : def_fun S (prod.fst : X × Y → X) :=
 is_reindexing.def_fun (is_reindexing.fst R)
@@ -348,6 +381,9 @@ show def_set S {y | ∃ x, x ∈ s ∧ f x = y}, from
 def_set.exists $
   (def_fun.preimage def_fun.snd hs).and
   (def_set_eq (hf.comp def_fun.snd) (def_fun.fst))
+
+lemma def_fun.range {f : X → Y} (hf : def_fun S f) : def_set S (range f) :=
+by { rw ←image_univ, exact hf.image (def_set_univ _) }
 
 end definable_fun
 
