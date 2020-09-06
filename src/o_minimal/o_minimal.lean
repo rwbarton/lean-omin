@@ -4,6 +4,8 @@ import o_minimal.order
 
 namespace o_minimal
 
+set_option old_structure_cmd true
+
 /-- A DUNLO is a dense unbounded nonempty linear order.
 This is the setting in which we can talk about o-minimal structures.
 See [vdD], §1.3, first italicized paragraph.
@@ -18,7 +20,8 @@ class DUNLO (R : Type*) extends decidable_linear_order R :=
 -- These classes are all `Prop`s so these instances should be harmless.
 attribute [instance] DUNLO.dense DUNLO.unbounded_below DUNLO.unbounded_above DUNLO.nonempty
 
-instance : DUNLO ℚ := {}
+instance : DUNLO ℚ :=
+{ .. show decidable_linear_order ℚ, by apply_instance }
 
 variables {R : Type*} [DUNLO R]
 
@@ -192,6 +195,12 @@ Below we verify that this definition agrees with the one of [vdD].
 -/
 class o_minimal (S : struc R) extends definable_constants S, is_definable_le S R : Prop :=
 (tame_of_def : ∀ {s : set R}, def_set S s → tame s)
+
+/-- Version of `o_minimal.tame_of_def` with explicit structure argument.
+This is useful because otherwise `S` can only be inferred from the proof of definability,
+which we might want to produce automatically. -/
+lemma tame_of_def (S : struc R) [o_minimal S] {s : set R} : def_set S s → tame s :=
+o_minimal.tame_of_def
 
 /-- Our definition of an o-minimal structure is equivalent to the one in [vdD:1.3.2]. -/
 lemma o_minimal_iff_vdD (S : struc R) : o_minimal S ↔
