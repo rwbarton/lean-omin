@@ -161,8 +161,7 @@ begin
   intro x,
   simp only
     [finvec.external_prod_def, true_and, and_true, mem_univ, mem_set_of_eq, function.comp_app],
-  rw iff_iff_eq,
-  congr; ext,
+  congr'; ext,
   { simp, refl },
   { simpa using (nat.add_sub_cancel' h).symm }
 end
