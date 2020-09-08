@@ -81,64 +81,6 @@ congr_fun (F.to_fun_extend_right f) x
 @[simp] lemma function_family.to_fun_eq_coe (F : function_family R) {n : ℕ} {f : F n} :
   F.to_fun n f = f := rfl
 
-section simple
-
--- Simple functions: just constants and coordinates.
-
-/-- Codes for simple functions: constants and coordinate projections. -/
-inductive simple_function_type (n : ℕ) : Type u
-| const : Π (r : R),     simple_function_type
-| coord : Π (i : fin n), simple_function_type
-
-namespace simple_function_type
-
-variables {R}
-
-/-- The interpretation of a code for a simple function. -/
-protected def to_fun {n : ℕ} : simple_function_type R n → (fin n → R) → R
-| (const r) := λ x, r
-| (coord i) := λ x, x i
-
-/-- (The code for) the extension of a simple function by an argument on the left. -/
-def extend_left {n : ℕ} :
-  simple_function_type R n → simple_function_type R (n+1)
-| (const r) := const r
-| (coord i) := coord i.succ
-
-lemma to_fun_extend_left {n : ℕ} (f : simple_function_type R n) :
-  f.extend_left.to_fun = f.to_fun ∘ fin.tail :=
-by cases f; ext; simp [simple_function_type.to_fun, extend_left, fin.tail]
-
-def extend_right {n : ℕ} :
-  simple_function_type R n → simple_function_type R (n+1)
-| (const r) := const r
-| (coord i) := coord i.cast_succ
-
-lemma to_fun_extend_right {n : ℕ} (f : simple_function_type R n) :
-  f.extend_right.to_fun = f.to_fun ∘ fin.init :=
-by cases f; ext; simp [simple_function_type.to_fun, extend_right, fin.init]
-
-end simple_function_type
-
-open simple_function_type
-
-/-- The family of simple functions, consisting of just constants and coordinate projections. -/
-def simple_function_family : function_family R :=
-{ carrier := simple_function_type R,
-  to_fun := @simple_function_type.to_fun R,
-  const := λ n r, const r,
-  to_fun_const := λ n r, rfl,
-  coord := λ n i, coord i,
-  to_fun_coord := λ n i, rfl,
-  extend_left := @extend_left R,
-  to_fun_extend_left := @to_fun_extend_left R,
-  extend_right := @extend_right R,
-  to_fun_extend_right := @to_fun_extend_right R }
-
--- TODO: Add some simp lemmas, phrased in terms of coercions
-
-end simple
-
 section linear_order
 
 /-

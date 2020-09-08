@@ -83,53 +83,6 @@ def function_family.is_isolating : Prop :=
 ∀ ⦃n : ℕ⦄ ⦃s : set (fin (n+1) → R)⦄, constrained F s →
 ∃ (ic : isolated_constraint F n), ic.to_set = s
 
-section simple
--- TODO: Move all contents on simple functions to their own module
--- once we've shown they generate an o-minimal structure.
-
-/-- A simple function in n+1 variables is either the last coordinate
-or can be pushed down to a simple function in n variables. -/
-lemma simple.last_coord_or_push {n : ℕ} : 
-  ∀ (f : simple_function_family R (n+1)),
-  f = (simple_function_family R).coord (fin.last n) ∨
-  ∃ f', f = (simple_function_family R).extend_right f'
-| (simple_function_type.const r) := or.inr ⟨simple_function_type.const r, rfl⟩
-| (simple_function_type.coord i) :=
-begin
-  -- TODO: simplify & share logic with `fin.snoc`?
-  by_cases h : i < fin.last n,
-  { refine or.inr ⟨simple_function_type.coord (fin.cast_lt i h), _⟩,
-    change _ = simple_function_type.coord _,
-    rw fin.cast_succ_cast_lt i h },
-  { replace h := fin.eq_last_of_not_lt h,
-    subst i,
-    refine or.inl rfl }
-end
-
-lemma simple_function_family_is_isolating : (simple_function_family R).is_isolating :=
-begin
-  -- Analyze the given constraint and push down the functions if possible: 8 cases
-  rintros n _ (⟨f,g⟩|⟨f,g⟩); clear a; -- what is `a`??
-    rcases simple.last_coord_or_push f with rfl|⟨f', rfl⟩;
-    rcases simple.last_coord_or_push g with rfl|⟨g', rfl⟩,
-  { refine ⟨isolated_constraint.tt, _⟩,
-    simp [isolated_constraint.to_set], refl },
-  { exact ⟨isolated_constraint.eq g', rfl⟩ },
-  { refine ⟨isolated_constraint.eq f', _⟩,
-    conv_rhs { funext, rw eq_comm },
-    refl },
-  { exact ⟨isolated_constraint.push_eq f' g', rfl⟩ },
-  { refine ⟨isolated_constraint.ff, _⟩,
-    simp [isolated_constraint.to_set], refl },
-  { refine ⟨isolated_constraint.lt g', rfl⟩ },
-  { refine ⟨isolated_constraint.gt f', _⟩,
-    conv_rhs { funext, rw ←gt_iff_lt },
-    refl },
-  { refine ⟨isolated_constraint.push_lt f' g', rfl⟩ }
-end
-
-end simple
-
 -- Henceforth, we assume the family F is isolating.
 variables (hF : F.is_isolating)
 
@@ -697,16 +650,6 @@ o_minimal_of_function_family
   .. function_family_struc_hypotheses_of_isolating hF @D @B @P hD hB hP }
 
 end o_minimal
-
-section simple
-
-/-- The structure defined by (R, <). -/
-def simple_struc : struc R := struc_of_isolating' simple_function_family_is_isolating
-
-/-- The structure defined by (R, <) is o-minimal. -/
-instance : o_minimal (simple_struc : struc R) := by apply o_minimal_of_isolating
-
-end simple
 
 end DUNLO
 
