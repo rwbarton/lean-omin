@@ -84,7 +84,7 @@ begin
   apply finite_union_closure.rec,
   { exact @h },
   { rw hΦ₀, apply finite_union_closure.empty },
-  { intros s t _ _ hs ht,       -- TODO: rcases -
+  { rintros s t - - hs ht,
     rw hΦ₂,
     apply hs.union ht }
 end

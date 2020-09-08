@@ -167,7 +167,7 @@ begin
   convert constrained.EQ (F.coord (fin.last n)) (F.extend_right f),
   ext x,
   -- TODO: simplify this proof
-  change x (fin.last n) = f (fin.init x) ↔ F.to_fun _ (F.coord (fin.last n)) x = F.to_fun _ (F.extend_right f) x,
+  change x (fin.last n) = f (fin.init x) ↔ F.to_fun (F.coord (fin.last n)) x = F.to_fun (F.extend_right f) x,
   rw [F.to_fun_coord, F.to_fun_extend_right],
   refl
 end
@@ -175,20 +175,20 @@ end
 begin
   apply finite_inter_closure.inter;
     refine closed_under_finite_inters_finite_inter_closure.mem_fInter _ _;
-    intros i _;
-    apply finite_inter_closure.basic,                 -- TODO: use rintros -
+    rintros i -;
+    apply finite_inter_closure.basic,
   { change constrained F _,
     convert constrained.LT (F.extend_right i) (F.coord (fin.last n)),
     ext x,
     -- TODO: simplify this proof
-    change _ ↔ F.to_fun _ (F.extend_right i) x < F.to_fun _ (F.coord (fin.last n)) x,
+    change _ ↔ F.to_fun (F.extend_right i) x < F.to_fun (F.coord (fin.last n)) x,
     rw [F.to_fun_coord, F.to_fun_extend_right],
     refl },
   { change constrained F _,
     convert constrained.LT (F.coord (fin.last n)) (F.extend_right i),
     ext x,
     -- TODO: simplify this proof
-    change _ ↔ F.to_fun _ (F.coord (fin.last n)) x < F.to_fun _ (F.extend_right i) x,
+    change _ ↔ F.to_fun (F.coord (fin.last n)) x < F.to_fun (F.extend_right i) x,
     rw [F.to_fun_coord, F.to_fun_extend_right],
     refl },
 end

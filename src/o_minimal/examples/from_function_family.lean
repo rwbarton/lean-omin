@@ -35,40 +35,37 @@ We use a separate indexing type `carrier` to represent the functions
 (rather than something like `Π (n : ℕ), set ((fin n → R) → R)`)
 to make it easier to operate on the functions in a specific context
 (for example, to simplify constraints).
-
-TODO: Probably make argument `n` of `to_fun` implicit.
-TODO: These {n : ℕ} binders are really annoying.
 -/
 structure function_family : Type (u+1) :=
 (carrier : Π (n : ℕ), Type u)
-(to_fun : Π (n : ℕ), carrier n → (fin n → R) → R)
+(to_fun : Π {n : ℕ}, carrier n → (fin n → R) → R)
 (const : Π {n : ℕ} (r : R), carrier n)
 (to_fun_const :
-  ∀ {n : ℕ} {r : R}, to_fun n (const r) = λ _, r)
+  ∀ {n : ℕ} (r : R), @to_fun n (const r) = λ _, r)
 (coord : Π {n : ℕ} (i : fin n), carrier n)
 (to_fun_coord :
-  ∀ {n : ℕ} {i : fin n}, to_fun n (coord i) = λ x, x i)
+  ∀ {n : ℕ} (i : fin n), to_fun (coord i) = λ x, x i)
 (extend_left : Π {n : ℕ}, carrier n → carrier (n+1))
 (to_fun_extend_left :
-  ∀ {n : ℕ} (f : carrier n), to_fun (n+1) (extend_left f) = to_fun n f ∘ fin.tail)
+  ∀ {n : ℕ} (f : carrier n), to_fun (extend_left f) = to_fun f ∘ fin.tail)
 (extend_right : Π {n : ℕ}, carrier n → carrier (n+1))
 (to_fun_extend_right :
-  ∀ {n : ℕ} (f : carrier n), to_fun (n+1) (extend_right f) = to_fun n f ∘ fin.init)
+  ∀ {n : ℕ} (f : carrier n), to_fun (extend_right f) = to_fun f ∘ fin.init)
 
 instance has_coe_to_fun.function_family : has_coe_to_fun (function_family R) :=
 ⟨_, function_family.carrier⟩
 
 instance has_coe_to_fun.F (F : function_family R) (n : ℕ) : has_coe_to_fun (F n) :=
-⟨_, F.to_fun n⟩
+⟨λ _, (fin n → R) → R, λ f, F.to_fun f⟩
 
 -- TODO: Make judicious use of these lemmas
 @[simp] lemma function_family.const_app (F : function_family R) {n : ℕ} {r : R} {x : fin n → R} :
   F.const r x = r :=
-congr_fun (function_family.to_fun_const F) x
+congr_fun (function_family.to_fun_const F r) x
 
 @[simp] lemma function_family.coord_app (F : function_family R) {n : ℕ} {i : fin n} {x} :
   F.coord i x = x i :=
-congr_fun (function_family.to_fun_coord F) x
+congr_fun (function_family.to_fun_coord F i) x
 
 @[simp] lemma function_family.extend_left_app (F : function_family R) {n : ℕ} {f : F n} {x} :
   F.extend_left f x = f (fin.tail x) :=
@@ -79,7 +76,7 @@ congr_fun (F.to_fun_extend_left f) x
 congr_fun (F.to_fun_extend_right f) x
 
 @[simp] lemma function_family.to_fun_eq_coe (F : function_family R) {n : ℕ} {f : F n} :
-  F.to_fun n f = f := rfl
+  F.to_fun f = f := rfl
 
 section linear_order
 
@@ -115,14 +112,14 @@ begin
     { convert finvec.r_prod_eq,
       ext x,
       -- TODO: add lemma for extend_left stated in terms of coercions
-      change F.to_fun _ (F.extend_left f) x = F.to_fun _ (F.extend_left g) x ↔ _,
+      change F.to_fun (F.extend_left f) x = F.to_fun (F.extend_left g) x ↔ _,
       rw [F.to_fun_extend_left, F.to_fun_extend_left],
       refl } },
   { convert constrained.LT (F.extend_left f) (F.extend_left g) using 1,
     { exact add_comm _ _ },
     { convert finvec.r_prod_eq,
       ext x,
-      change F.to_fun _ (F.extend_left f) x < F.to_fun _ (F.extend_left g) x ↔ _,
+      change F.to_fun (F.extend_left f) x < F.to_fun (F.extend_left g) x ↔ _,
       rw [F.to_fun_extend_left, F.to_fun_extend_left],
       refl } },
 end
@@ -135,13 +132,13 @@ begin
     convert finvec.prod_r_eq,
     ext x,
     -- TODO: add lemma for extend_right stated in terms of coercions
-    change F.to_fun _ (F.extend_right f) x = F.to_fun _ (F.extend_right g) x ↔ _,
+    change F.to_fun (F.extend_right f) x = F.to_fun (F.extend_right g) x ↔ _,
     rw [F.to_fun_extend_right, F.to_fun_extend_right],
     refl },
   { convert constrained.LT (F.extend_right f) (F.extend_right g) using 1,
     convert finvec.prod_r_eq,
     ext x,
-    change F.to_fun _ (F.extend_right f) x < F.to_fun _ (F.extend_right g) x ↔ _,
+    change F.to_fun (F.extend_right f) x < F.to_fun (F.extend_right g) x ↔ _,
     rw [F.to_fun_extend_right, F.to_fun_extend_right],
     refl },
 end
@@ -233,7 +230,7 @@ from λ n s hs,
       convert constrained.EQ (F.coord 0) (F.coord (fin.last n)),
       ext x,
       -- TODO: Another lemma
-      change _ ↔ F.to_fun _ (F.coord 0) x = F.to_fun _ (F.coord (fin.last n)) x,
+      change _ ↔ F.to_fun (F.coord 0) x = F.to_fun (F.coord (fin.last n)) x,
       rw [F.to_fun_coord, F.to_fun_coord]
     end,
   definable_proj1_basic := H.definable_proj1_basic }
