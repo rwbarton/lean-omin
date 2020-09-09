@@ -58,7 +58,6 @@ instance has_coe_to_fun.function_family : has_coe_to_fun (function_family R) :=
 instance has_coe_to_fun.F (F : function_family R) (n : ℕ) : has_coe_to_fun (F n) :=
 ⟨λ _, (fin n → R) → R, λ f, F.to_fun f⟩
 
--- TODO: Make judicious use of these lemmas
 @[simp] lemma function_family.const_app (F : function_family R) {n : ℕ} {r : R} {x : fin n → R} :
   F.const r x = r :=
 congr_fun (function_family.to_fun_const F r) x
@@ -106,41 +105,20 @@ variables {F}
 lemma constrained.r_prod {n : ℕ} {s : set (fin n → R)} (hs : constrained F s) :
   constrained F (U 1 ⊠ s) :=
 begin
-  rcases hs with ⟨f,g⟩|⟨f,g⟩,
-  { convert constrained.EQ (F.extend_left f) (F.extend_left g) using 1,
-    { exact add_comm _ _ },
-    { convert finvec.r_prod_eq,
-      ext x,
-      -- TODO: add lemma for extend_left stated in terms of coercions
-      change F.to_fun (F.extend_left f) x = F.to_fun (F.extend_left g) x ↔ _,
-      rw [F.to_fun_extend_left, F.to_fun_extend_left],
-      refl } },
-  { convert constrained.LT (F.extend_left f) (F.extend_left g) using 1,
-    { exact add_comm _ _ },
-    { convert finvec.r_prod_eq,
-      ext x,
-      change F.to_fun (F.extend_left f) x < F.to_fun (F.extend_left g) x ↔ _,
-      rw [F.to_fun_extend_left, F.to_fun_extend_left],
-      refl } },
+  rcases hs with ⟨f,g⟩|⟨f,g⟩;
+  [ convert constrained.EQ (F.extend_left f) (F.extend_left g) using 1,
+    convert constrained.LT (F.extend_left f) (F.extend_left g) using 1 ],
+  all_goals { try { exact add_comm _ _ } },
+  all_goals { convert finvec.r_prod_eq, ext x, simp, refl }
 end
 
 lemma constrained.prod_r {n : ℕ} {s : set (fin n → R)} (hs : constrained F s) :
   constrained F (s ⊠ U 1) :=
 begin
-  rcases hs with ⟨f,g⟩|⟨f,g⟩,
-  { convert constrained.EQ (F.extend_right f) (F.extend_right g),
-    convert finvec.prod_r_eq,
-    ext x,
-    -- TODO: add lemma for extend_right stated in terms of coercions
-    change F.to_fun (F.extend_right f) x = F.to_fun (F.extend_right g) x ↔ _,
-    rw [F.to_fun_extend_right, F.to_fun_extend_right],
-    refl },
-  { convert constrained.LT (F.extend_right f) (F.extend_right g) using 1,
-    convert finvec.prod_r_eq,
-    ext x,
-    change F.to_fun (F.extend_right f) x < F.to_fun (F.extend_right g) x ↔ _,
-    rw [F.to_fun_extend_right, F.to_fun_extend_right],
-    refl },
+  rcases hs with ⟨f,g⟩|⟨f,g⟩;
+  [ convert constrained.EQ (F.extend_right f) (F.extend_right g),
+    convert constrained.LT (F.extend_right f) (F.extend_right g) ];
+  { convert finvec.prod_r_eq, ext x, simp, refl }
 end
 
 -- TODO: for_mathlib
@@ -228,10 +206,7 @@ from λ n s hs,
     basic_of_constrained $
     begin
       convert constrained.EQ (F.coord 0) (F.coord (fin.last n)),
-      ext x,
-      -- TODO: Another lemma
-      change _ ↔ F.to_fun (F.coord 0) x = F.to_fun (F.coord (fin.last n)) x,
-      rw [F.to_fun_coord, F.to_fun_coord]
+      ext x, simp
     end,
   definable_proj1_basic := H.definable_proj1_basic }
 

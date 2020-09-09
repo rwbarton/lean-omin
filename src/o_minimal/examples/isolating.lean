@@ -78,7 +78,6 @@ end isolated_constraint
 is equivalent to an isolated constraint. -/
 -- TODO: Should `isolate` be data?
 -- Currently `constrained` only exists as a `Prop`, should it be data?
--- TODO: Should isolating_family be a mix-in?
 def function_family.is_isolating : Prop :=
 ∀ ⦃n : ℕ⦄ ⦃s : set (fin (n+1) → R)⦄, constrained F s →
 ∃ (ic : isolated_constraint F n), ic.to_set = s
@@ -116,7 +115,8 @@ def to_set {n : ℕ} :
     (⋂ (h : F n) (H : h ∈ upper), {x | x (fin.last n) < h (fin.init x)})
 
 @[simp]
-lemma to_set_empty_empty {n : ℕ} : (between ∅ ∅ : last_variable_constraints F n).to_set = univ :=
+lemma to_set_between_empty_empty {n : ℕ} :
+  (between ∅ ∅ : last_variable_constraints F n).to_set = univ :=
 by simp [to_set]
 
 end last_variable_constraints
@@ -165,32 +165,17 @@ lemma last_variable_constraints.to_set_basic {n : ℕ} :
 begin
   apply finite_inter_closure.basic,
   convert constrained.EQ (F.coord (fin.last n)) (F.extend_right f),
-  ext x,
-  -- TODO: simplify this proof
-  change x (fin.last n) = f (fin.init x) ↔ F.to_fun (F.coord (fin.last n)) x = F.to_fun (F.extend_right f) x,
-  rw [F.to_fun_coord, F.to_fun_extend_right],
-  refl
+  ext x, simp, refl
 end
 | (last_variable_constraints.between lower upper) :=
 begin
   apply finite_inter_closure.inter;
     refine closed_under_finite_inters_finite_inter_closure.mem_fInter _ _;
     rintros i -;
-    apply finite_inter_closure.basic,
-  { change constrained F _,
-    convert constrained.LT (F.extend_right i) (F.coord (fin.last n)),
-    ext x,
-    -- TODO: simplify this proof
-    change _ ↔ F.to_fun (F.extend_right i) x < F.to_fun (F.coord (fin.last n)) x,
-    rw [F.to_fun_coord, F.to_fun_extend_right],
-    refl },
-  { change constrained F _,
-    convert constrained.LT (F.coord (fin.last n)) (F.extend_right i),
-    ext x,
-    -- TODO: simplify this proof
-    change _ ↔ F.to_fun (F.coord (fin.last n)) x < F.to_fun (F.extend_right i) x,
-    rw [F.to_fun_coord, F.to_fun_extend_right],
-    refl },
+    apply finite_inter_closure.basic;
+  [ convert constrained.LT (F.extend_right i) (F.coord (fin.last n)),
+    convert constrained.LT (F.coord (fin.last n)) (F.extend_right i) ];
+  { ext x, simp },
 end
 
 lemma triangular_constraints.to_set_basic :
