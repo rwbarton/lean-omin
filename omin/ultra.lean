@@ -1,4 +1,5 @@
 import topology.algebra.ordered
+import for_mathlib.filter_decides
 import .tame
 
 -- Ultrafilters on the boolean algebra of tame sets.
@@ -21,9 +22,32 @@ lemma tame_ultra_iff_eventually {F : filter R} :
   tame_ultra F ↔ ∀ ⦃s : set R⦄ (ts : tame s), (∀ᶠ x in F, x ∈ s) ∨ (∀ᶠ x in F, x ∉ s) :=
 iff.rfl
 
-lemma tame_bot {s : set R} (ts : tame s) :
-  tame_ultra (at_bot : filter R) :=
-sorry
+/-- We can check that a filter is `tame_ultra` by testing it
+on half-infinite intervals. -/
+lemma tame_ultra_of_half_infinite {F : filter R}
+  (hio : ∀ (b : R), F.decides (set.Iio b))
+  (hoi : ∀ (a : R), F.decides (set.Ioi a)) :
+  tame_ultra F :=
+begin
+  unfold tame_ultra,
+  rw tame_eq_gen_half_infinite_interval,
+  apply filter.decides_gen,
+  rintros _ (b|a); apply_assumption
+end
+
+lemma tame_bot : tame_ultra (at_bot : filter R) :=
+begin
+  apply tame_ultra_of_half_infinite,
+  { intro b,
+    left,
+    apply Iio_mem_at_bot },
+  { intro a,
+    right,
+    rw set.compl_Ioi,
+    apply mem_at_bot }
+end
+
+-- similarly, tame_top
 
 local attribute [instance] preorder.topology
 
@@ -34,12 +58,36 @@ lemma mem_above_iff {s : set R} (a : R) :
 mem_nhds_within_Ioi_iff_exists_Ioo_subset
 
 lemma tame_above (a : R) : tame_ultra (above a) :=
-sorry
-
-/-
-lemma o_minimal.tame.compl {s : set R} (ts : tame s) : tame sᶜ :=
-sorry                           -- can get this from o-minimality of simple functions
--/
+begin
+  apply tame_ultra_of_half_infinite,
+  { intro b,
+    -- TODO: float the cases/push_neg?
+    by_cases h : a < b,
+    { left,
+      -- TODO: for_mathlib: Iio_mem_nhds_within_Ioi
+      have H : a ∈ set.Ico a b := ⟨le_refl a, h⟩,
+      exact mem_sets_of_superset (Ioo_mem_nhds_within_Ioi H) set.Ioo_subset_Iio_self },
+    { right,
+      rw set.compl_Iio,
+      push_neg at h,
+      unfold above,
+      -- TODO: for_mathlib: Ici_mem_nhds_within_Ioi
+      rw mem_nhds_within,
+      exact ⟨set.univ, is_open_univ, trivial, λ x ⟨_, hx⟩, le_trans h (le_of_lt hx)⟩ } },
+  { intro b,
+    by_cases h : a < b,
+    { right,
+      rw set.compl_Ioi,
+      -- TODO: for_mathlib: Iic_mem_nhds_within_Ioi
+      refine mem_sets_of_superset _ set.Icc_subset_Iic_self, { exact a },
+      exact Icc_mem_nhds_within_Ioi ⟨le_refl a, h⟩ },
+    { left,
+      push_neg at h,
+      unfold above,
+      -- TODO: for_mathlib: Ici_mem_nhds_within_Ioi
+      rw mem_nhds_within,
+      exact ⟨set.univ, is_open_univ, trivial, λ x ⟨_, hx⟩, lt_of_le_of_lt h hx⟩ } }
+end
 
 -- If a tame set doesn't contain its inf `a`, then it must contain some interval above `a`.
 lemma above_inf {s : set R} (ts : tame s) {a : R} (ha : is_glb s a) (has : a ∉ s) :
@@ -59,3 +107,5 @@ lemma above_inf {s : set R} (ts : tame s) {a : R} (ha : is_glb s a) (has : a ∉
   revert hab,
   exact not_lt_of_le (ha.2 this)
 end
+
+-- similarly, below
