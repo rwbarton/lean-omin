@@ -1,8 +1,8 @@
 [package]
 name = "lean-omin"
 version = "0.1"
-lean_version = "leanprover-community/lean:3.19.0"
+lean_version = "leanprover-community/lean:3.20.0"
 path = "src"
 
 [dependencies]
-mathlib = {git = "https://github.com/leanprover-community/mathlib", rev = "f9ee4166082b0a6c8a7f60a60b1d57ca2444af64"}
+mathlib = {git = "https://github.com/leanprover-community/mathlib", rev = "39962b7c442d064d06855880abd43a3a8f2342b4"}
