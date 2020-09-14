@@ -8,6 +8,8 @@ A project to formalize the theory of [o-minimal structures](https://en.wikipedia
 
 * Lemma 1 of the monotonicity theorem.
 
+* Definable choice (`sorry`-free draft version).
+
 ## Directory layout
 
 * `omin` is a playground for new ideas,
