@@ -125,13 +125,15 @@ variables {S}
 
 /-- Construct a definable partial function on sets from a definable relation.
 This is sensible when the relation is single-valued:
-`r` s.t. `rel X r` is unique if it exists. -/
-noncomputable def pfun_of_rel (rel : set R → R → Prop) : set R →. R := λ X,
+`r` s.t. `rel X r` is unique if it exists.
+We ask for the proof of uniqueness now to avoid having to write it later. -/
+noncomputable def pfun_of_rel (rel : set R → R → Prop)
+  (uni : ∀ X r r', rel X r → rel X r' → r = r') : set R →. R := λ X,
 { dom := ∃ r, rel X r,
   get := λ h, classical.some h }
 
 lemma mem_pfun_of_rel_iff {rel : set R → R → Prop} (uni : ∀ X r r', rel X r → rel X r' → r = r')
-  (X : set R) (r : R) : r ∈ pfun_of_rel rel X ↔ rel X r :=
+  (X : set R) (r : R) : r ∈ pfun_of_rel rel uni X ↔ rel X r :=
 begin
   split; intro H,
   { rcases H with ⟨H, rfl⟩,
@@ -139,8 +141,12 @@ begin
   { exact ⟨⟨r, H⟩, uni _ _ _ (classical.some_spec _) H⟩ }
 end
 
-lemma def_pfun_of_rel {rel : set R → R → Prop} (uni : ∀ X r r', rel X r → rel X r' → r = r')
-  (drel : def_rel_set S rel) : def_pfun_set S (pfun_of_rel rel) :=
+lemma get_pfun_of_rel_eq_of_rel {rel : set R → R → Prop} {uni}
+  {X : set R} {r : R} (h : rel X r) {H} : (pfun_of_rel rel uni X).get H = r :=
+uni X _ _ (classical.some_spec _) h
+
+lemma def_pfun_of_rel {rel : set R → R → Prop} {uni}
+  (drel : def_rel_set S rel) : def_pfun_set S (pfun_of_rel rel uni) :=
 begin
   constructor,
   introsI K _ _ s ds,
@@ -149,15 +155,16 @@ begin
   apply mem_pfun_of_rel_iff uni
 end
 
-def the_least_rel (X : set R) (e : R) : Prop := is_least X e
+noncomputable def the_least : set R →. R :=
+pfun_of_rel is_least (λ _ _ _, is_least.unique)
 
-noncomputable def the_least : set R →. R := pfun_of_rel the_least_rel
+@[simp] lemma the_least_dom {X : set R} : (the_least X).dom = ∃ e, is_least X e := rfl
 
-lemma def_the_least_rel : def_rel_set S (the_least_rel : set R → R → Prop) :=
+lemma def_is_least : def_rel_set S (is_least : set R → R → Prop) :=
 begin
   constructor,
   introsI K _ _ s ds,
-  dunfold the_least_rel is_least lower_bounds,
+  dunfold is_least lower_bounds,
   -- now probably automatable
   apply def_set.and,
   { refine def_fun.preimage _ ds,
@@ -170,19 +177,22 @@ begin
 end
 
 lemma def_the_least : def_pfun_set S (the_least : set R →. R) :=
-begin
-  refine def_pfun_of_rel _ def_the_least_rel,
-  apply is_least.unique
-end
+def_pfun_of_rel def_is_least
 
 -- Now repeat for inf, sup.
 
-noncomputable def the_inf : set R →. R := pfun_of_rel is_glb
-noncomputable def the_sup : set R →. R := pfun_of_rel is_lub
+noncomputable def the_inf : set R →. R :=
+pfun_of_rel is_glb (λ _ _ _, is_glb.unique)
+
+noncomputable def the_sup : set R →. R :=
+pfun_of_rel is_lub (λ _ _ _, is_lub.unique)
+
+@[simp] lemma the_inf_dom {X : set R} : (the_inf X).dom = ∃ a, is_glb X a := rfl
+@[simp] lemma the_sup_dom {X : set R} : (the_sup X).dom = ∃ b, is_lub X b := rfl
 
 lemma def_the_inf : def_pfun_set S (the_inf : set R →. R) :=
 begin
-  refine def_pfun_of_rel (λ _ _ _, is_glb.unique) _,
+  refine def_pfun_of_rel _,
   constructor, introsI K _ _ s ds,
   simp_rw is_glb_def,
   apply def_set.and,

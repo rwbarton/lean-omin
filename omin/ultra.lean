@@ -47,6 +47,23 @@ begin
     apply mem_at_bot }
 end
 
+lemma contains_Iio_or_bdd_below {s : set R} (ts : tame s) :
+  (∃ a, set.Iio a ⊆ s) ∨ bdd_below s :=
+begin
+  cases tame_bot ts with h h;
+    obtain ⟨a, ha⟩ := mem_at_bot_sets.mp h,
+  { -- TODO: for_mathlib: mem_at_bot_sets' using strict inequality
+    exact or.inl ⟨a, λ b hab, ha b (le_of_lt hab)⟩ },
+  { right,
+    -- TODO: for_mathlib?
+    use a,
+    intros b hb,
+    apply le_of_lt,
+    rw lt_iff_not_ge,
+    intro H,
+    exact ha b H hb }
+end
+
 -- similarly, tame_top
 
 local attribute [instance] preorder.topology
