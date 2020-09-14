@@ -1,13 +1,15 @@
-import .choice1
+import .choice5
 
 -- Prove general definable choice from the 1D version.
 
 open o_minimal
 
-variables {R : Type*} [OQM R] {S : struc R} [o_minimal_add S]
+universe u
 
-variables {X : Type*} [has_coordinates R X] [is_definable S X]
-variables {Y : Type*} [has_coordinates R Y] [is_definable S Y]
+variables {R : Type u} [OQM R] {S : struc R} [o_minimal_add S]
+
+variables {X : Type u} [has_coordinates R X] [is_definable S X]
+variables {Y : Type u} [has_coordinates R Y] [is_definable S Y]
 
 -- Inductive argument: definable choice for projections s ⊆ Y × Rⁿ → Y.
 lemma definable_choice_n {n : ℕ} {s : set (Y × (fin n → R))} (hs : def_set S s)
@@ -20,9 +22,7 @@ begin
     obtain ⟨⟨y', z⟩, h, rfl⟩ := this,
     convert h },
   { let π : Y × (fin (n+1) → R) → Y × (fin n → R) := λ p, (p.1, fin.init p.2),
-    have dπ : def_fun S π,
-    { have : def_fun S (fin.init : (fin (n+1) → R) → (fin n → R)) := sorry,
-      refine def_fun.prod def_fun.id this },
+    have dπ : def_fun S π := def_fun.prod def_fun.id (by exact def_fun.fin.init),
     let t : set (Y × (fin n → R)) := π '' s,
     have dt : def_set S t := def_fun.image dπ hs,
     have : prod.fst '' t = set.univ,
@@ -33,16 +33,34 @@ begin
     -- Now, we need to massage the data into the form to apply `definable_choice_1`.
     letI : is_definable S t := is_definable.subtype dt,
     let i : t × R → Y × (fin (n+1) → R) := λ p, (p.fst.val.fst, fin.snoc p.fst.val.snd p.snd),
-    have di : def_fun S i := sorry,
+    have di : def_fun S i,
+    { apply def_fun.prod',
+      { exact def_fun.fst.comp (def_fun_subtype_val.comp def_fun.fst) },
+      { apply def_fun.fin.snoc,
+        { exact def_fun.snd.comp (def_fun_subtype_val.comp def_fun.fst) },
+        { exact def_fun.snd } } },
     let s' := i ⁻¹' s,
     have ds' : def_set S s' := di.preimage hs,
-    have : prod.fst '' s' = set.univ := sorry,
+    have : prod.fst '' s' = set.univ,
+    { -- TODO: is this right? probably an easier way
+      apply set.eq_univ_of_forall,
+      rintro ⟨_, ⟨⟨y, r⟩, h, rfl⟩⟩,
+      refine ⟨(⟨(y, fin.init r), ⟨(y, r), h, rfl⟩⟩, r (fin.last n)), _, rfl⟩,
+      { change (y, _) ∈ s,
+        convert h,
+        rw finvec.snoc_eq_append,
+        convert finvec.append_left_right r,
+        ext j,
+        fin_cases j,
+        simp [finvec.right],
+        refl } },
     obtain ⟨g'' : t → R, hg''₁, hg''₂⟩ := definable_choice_1 ds' this,
     -- Finally combine all the stuff.
     refine ⟨λ y, fin.snoc (g' y) (g'' ⟨⟨y, g' y⟩, hg'₂ y⟩), _, λ y, hg''₂ ⟨⟨y, g' y⟩, hg'₂ y⟩⟩,
-    -- ⊢ def_fun S (λ (y : Y), fin.snoc (g' y) (g'' ⟨(y, g' y), _⟩))
-    -- need to prove `fin.init`, `fin.snoc` definable (⇐ they are reindexings).
-    sorry }
+    apply def_fun.fin.snoc hg'₁,
+    apply hg''₁.comp,
+    apply def_fun_subtype_mk,
+    exact def_fun.id.prod' hg'₁ }
 end
 
 -- General form of definable choice.
@@ -66,6 +84,7 @@ begin
     -- this doesn't mean anything special, just definable & injective.
     have : coords R ∘ g = g',
     { ext y, have := hg₂ y, dsimp only [j] at this, dsimp only [(∘)], cc },
-    sorry },
+    apply def_fun.cancel def_fun.coords (injective_coords _),
+    convert hg'₁ },
   { ext y, have := hg₂ y, dsimp only [j] at this, dsimp only [(∘), id], cc }
 end
