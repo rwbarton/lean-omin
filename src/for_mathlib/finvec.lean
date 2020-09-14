@@ -108,4 +108,22 @@ by { ext i, fin_cases i }
 instance : unique (fin 0 → α) :=
 ⟨⟨fin_zero_elim⟩, finvec_zero⟩
 
+-- TODO: clean up this proof
+-- do we need a lemma computing `(x ++ y) j`?
+lemma snoc_eq_append {n : ℕ} {x : fin n → α} {y : α} :
+  (fin.snoc x y : fin (n+1) → α) = x ++ function.const _ y :=
+begin
+  refine (append_left_right (fin.snoc x y : fin (n+1) → α)).symm.trans _,
+  rw append.inj_iff,
+  split,
+  { ext i,
+    convert_to x _ = x i,
+    { simp [left, fin.snoc, dif_pos i.is_lt] },
+    congr,
+    ext,
+    refl },
+  { ext i,
+    simp [right, fin.snoc] }
+end
+
 end finvec

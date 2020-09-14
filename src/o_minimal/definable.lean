@@ -371,9 +371,43 @@ lemma def_fun_subtype_val {s : set X} {hs : def_set S s} :
 by haveI := is_definable.subtype hs; exact
 (is_reindexing.subtype.val R).def_fun
 
+-- TODO: Lean has trouble with the complicated type of `fin.init`.
+-- We should replace it with a nondependent version everywhere.
+lemma def_fun.fin.init {n : ℕ} :
+  def_fun S (λ x : (fin (n+1) → R), (fin.init x : fin n → R)) :=
+(is_reindexing.fin.init R).def_fun
+
+lemma def_fun.fin.snoc' {n : ℕ} :
+  def_fun S (λ (p : (fin n → R) × R), (fin.snoc p.1 p.2 : fin (n+1) → R)) :=
+(is_reindexing.fin.snoc R).def_fun
+
+lemma def_fun.fin.snoc {n : ℕ} {f : X → fin n → R} (hf : def_fun S f) {g : X → R} (hg : def_fun S g) :
+  def_fun S (λ x, (fin.snoc (f x) (g x) : fin (n+1) → R)) :=
+(@def_fun.fin.snoc' R S n).comp (hf.prod' hg)
+
 lemma def_set_eq {f g : X → Y} (hf : def_fun S f) (hg : def_fun S g) :
   def_set S {x | f x = g x} :=
 (hf.prod' hg).preimage def_set_diag
+
+lemma def_fun.cancel {g : Y → Z} (dg : def_fun S g) (hg : function.injective g)
+  {f : X → Y} (h : def_fun S (g ∘ f)) : def_fun S f :=
+begin
+  unfold def_fun,
+  suffices : def_set S {p : X × Y | (g ∘ f) p.fst = g p.snd},
+  { convert ←this,
+    ext,
+    apply hg.eq_iff },
+  apply def_set_eq,
+  { exact h.comp def_fun.fst },
+  { exact dg.comp def_fun.snd }
+end
+
+lemma def_fun_subtype_mk {s : set X} {hs : def_set S s}
+  {f : Y → X} (df : def_fun S f) (h : ∀ y, f y ∈ s) :
+  by haveI := is_definable.subtype hs; exact
+  def_fun S (λ y, (⟨f y, h y⟩ : s)) :=
+by haveI := is_definable.subtype hs; exact
+def_fun.cancel def_fun_subtype_val subtype.val_injective df
 
 lemma def_fun.image {f : X → Y} (hf : def_fun S f) {s : set X} (hs : def_set S s) :
   def_set S (f '' s) :=
