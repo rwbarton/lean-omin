@@ -1,4 +1,3 @@
-import for_mathlib.tmp
 import o_minimal.examples.from_finite_inters
 
 namespace o_minimal
@@ -32,13 +31,14 @@ Examples:
 - all polynomial functions (where R is a ring).
 
 We use a separate indexing type `carrier` to represent the functions
-(rather than something like `Π (n : ℕ), set ((fin n → R) → R)`)
+(rather than something like `Π (n : ℕ), set (finvec n R → R)`)
 to make it easier to operate on the functions in a specific context
 (for example, to simplify constraints).
 -/
+-- TODO: Turns out we need `finvec.tail` after all?
 structure function_family : Type (u+1) :=
 (carrier : Π (n : ℕ), Type u)
-(to_fun : Π {n : ℕ}, carrier n → (fin n → R) → R)
+(to_fun : Π {n : ℕ}, carrier n → finvec n R → R)
 (const : Π {n : ℕ} (r : R), carrier n)
 (to_fun_const :
   ∀ {n : ℕ} (r : R), @to_fun n (const r) = λ _, r)
@@ -47,7 +47,7 @@ structure function_family : Type (u+1) :=
   ∀ {n : ℕ} (i : fin n), to_fun (coord i) = λ x, x i)
 (extend_left : Π {n : ℕ}, carrier n → carrier (n+1))
 (to_fun_extend_left :
-  ∀ {n : ℕ} (f : carrier n), to_fun (extend_left f) = to_fun f ∘ fin.tail)
+  ∀ {n : ℕ} (f : carrier n), to_fun (extend_left f) = to_fun f ∘ finvec.tail)
 (extend_right : Π {n : ℕ}, carrier n → carrier (n+1))
 (to_fun_extend_right :
   ∀ {n : ℕ} (f : carrier n), to_fun (extend_right f) = to_fun f ∘ fin.init)
@@ -56,9 +56,9 @@ instance has_coe_to_fun.function_family : has_coe_to_fun (function_family R) :=
 ⟨_, function_family.carrier⟩
 
 instance has_coe_to_fun.F (F : function_family R) (n : ℕ) : has_coe_to_fun (F n) :=
-⟨λ _, (fin n → R) → R, λ f, F.to_fun f⟩
+⟨λ _, finvec n R → R, λ f, F.to_fun f⟩
 
-@[simp] lemma function_family.const_app (F : function_family R) {n : ℕ} {r : R} {x : fin n → R} :
+@[simp] lemma function_family.const_app (F : function_family R) {n : ℕ} {r : R} {x : finvec n R} :
   F.const r x = r :=
 congr_fun (function_family.to_fun_const F r) x
 
@@ -67,7 +67,7 @@ congr_fun (function_family.to_fun_const F r) x
 congr_fun (function_family.to_fun_coord F i) x
 
 @[simp] lemma function_family.extend_left_app (F : function_family R) {n : ℕ} {f : F n} {x} :
-  F.extend_left f x = f (fin.tail x) :=
+  F.extend_left f x = f (finvec.tail x) :=
 congr_fun (F.to_fun_extend_left f) x
 
 @[simp] lemma function_family.extend_right_app (F : function_family R) {n : ℕ} {f : F n} {x} :
@@ -96,29 +96,29 @@ under which the definable sets formed in this way make up an o-minimal structure
 
 variables {R} [linear_order R] (F : function_family R)
 
-inductive constrained {n : ℕ} : set (fin n → R) → Prop
+inductive constrained {n : ℕ} : set (finvec n R) → Prop
 | EQ (f g : F n) : constrained {x | f x = g x}
 | LT (f g : F n) : constrained {x | f x < g x}
 
 variables {F}
 
-lemma constrained.r_prod {n : ℕ} {s : set (fin n → R)} (hs : constrained F s) :
-  constrained F (U 1 ⊠ s) :=
+lemma constrained.r_prod {n : ℕ} {s : set (finvec n R)} (hs : constrained F s) :
+  constrained F (finvec.univ_prod 1 s) :=
 begin
+  refine (finvec.univ_prod_one_like_preimage_tail _).mpr _,
   rcases hs with ⟨f,g⟩|⟨f,g⟩;
   [ convert constrained.EQ (F.extend_left f) (F.extend_left g) using 1,
-    convert constrained.LT (F.extend_left f) (F.extend_left g) using 1 ],
-  all_goals { try { exact add_comm _ _ } },
-  all_goals { convert finvec.r_prod_eq, ext x, simp, refl }
+    convert constrained.LT (F.extend_left f) (F.extend_left g) using 1 ];
+  { ext x, simp, refl }
 end
 
-lemma constrained.prod_r {n : ℕ} {s : set (fin n → R)} (hs : constrained F s) :
-  constrained F (s ⊠ U 1) :=
+lemma constrained.prod_r {n : ℕ} {s : set (finvec n R)} (hs : constrained F s) :
+  constrained F (finvec.prod_univ s 1) :=
 begin
   rcases hs with ⟨f,g⟩|⟨f,g⟩;
   [ convert constrained.EQ (F.extend_right f) (F.extend_right g),
     convert constrained.LT (F.extend_right f) (F.extend_right g) ];
-  { convert finvec.prod_r_eq, ext x, simp, refl }
+  { ext x, simp, refl }         -- TODO: lemma?
 end
 
 -- TODO: for_mathlib
@@ -145,7 +145,7 @@ Options for dealing with this include:
    but then prove we get the same definable sets in the end as if it didn't exist.
    (Especially if we only add `constrained.empty` for `n = 0`, this doesn't seem too taxing.)
 -/
-lemma constrained.empty [h : nonempty R] {n : ℕ} : constrained F (∅ : set (fin n → R)) :=
+lemma constrained.empty [h : nonempty R] {n : ℕ} : constrained F (∅ : set (finvec n R)) :=
 begin
   casesI h with r,
   convert constrained.LT (F.const r) (F.const r),
@@ -154,18 +154,18 @@ end
 
 end empty
 
-variables (F) (D B P : Π ⦃n : ℕ⦄, set (set (fin n → R)))
+variables (F) (D B P : Π ⦃n : ℕ⦄, set (set (finvec n R)))
 
 /-- Hypotheses for a structure. -/
 structure function_family_struc_hypotheses : Prop :=
 (definable_iff_finite_union_basic :
-  ∀ {n} {s : set (fin n → R)}, D s ↔ s ∈ finite_union_closure (@B n))
+  ∀ {n} {s : set (finvec n R)}, D s ↔ s ∈ finite_union_closure (@B n))
 (basic_iff_finite_inter_primitive :
-  ∀ {n} {s : set (fin n → R)}, B s ↔ s ∈ finite_inter_closure (@P n))
+  ∀ {n} {s : set (finvec n R)}, B s ↔ s ∈ finite_inter_closure (@P n))
 (primitive_iff_constrained :
-  ∀ {n} {s : set (fin n → R)}, P s ↔ constrained F s)
+  ∀ {n} {s : set (finvec n R)}, P s ↔ constrained F s)
 (definable_proj1_basic :
-  ∀ {n} {s : set (fin (n+1) → R)}, B s → D (finvec.left '' s))
+  ∀ {n} {s : set (finvec (n + 1) R)}, B s → D (finvec.left '' s))
 
 variables {F D B P}
 
@@ -179,7 +179,7 @@ local notation `P₀` := (λ {n : ℕ}, constrained F)
 private lemma key
   (H : function_family_struc_hypotheses F D B P₀) :
   finite_inter_struc_hypotheses D B P₀ :=
-have basic_of_constrained : ∀ {n} {s : set (fin n → R)}, constrained F s → B s,
+have basic_of_constrained : ∀ {n} {s : set (finvec n R)}, constrained F s → B s,
 from λ n s hs,
   (function_family_struc_hypotheses.basic_iff_finite_inter_primitive H).mpr
     (finite_inter_closure.basic hs),
@@ -206,7 +206,7 @@ from λ n s hs,
     basic_of_constrained $
     begin
       convert constrained.EQ (F.coord 0) (F.coord (fin.last n)),
-      ext x, simp
+      ext x, simp [finvec.last]
     end,
   definable_proj1_basic := H.definable_proj1_basic }
 
@@ -229,16 +229,16 @@ end linear_order
 
 section o_minimal
 
-variables {R} [DUNLO R] (F : function_family R) (D B P : Π ⦃n : ℕ⦄, set (set (fin n → R)))
+variables {R} [DUNLO R] (F : function_family R) (D B P : Π ⦃n : ℕ⦄, set (set (finvec n R)))
 
 structure function_family_o_minimal_hypotheses extends function_family_struc_hypotheses F D B P : Prop :=
-(tame_of_constrained : ∀ {s : set (fin 1 → R)}, constrained F s → tame {r | (λ _, r : fin 1 → R) ∈ s})
+(tame_of_constrained : ∀ {s : set (finvec 1 R)}, constrained F s → tame {r | (λ _, r : finvec 1 R) ∈ s})
 
 variables {F D B P} (H : function_family_o_minimal_hypotheses F D B P)
 
 lemma o_minimal_of_function_family :
   o_minimal (struc_of_function_family H.to_function_family_struc_hypotheses) :=
-have definable_of_constrained : ∀ {n} {s : set (fin n → R)}, constrained F s → D s := λ n s hs,
+have definable_of_constrained : ∀ {n} {s : set (finvec n R)}, constrained F s → D s := λ n s hs,
   -- TODO: This is terrible
   (function_family_struc_hypotheses.definable_iff_finite_union_basic H.to_function_family_struc_hypotheses).mpr $
   finite_union_closure.basic $

@@ -25,10 +25,10 @@ Informally, we denote this situation by "X ⊆ Rⁿ".
 -/
 class has_coordinates (X : Type*) :=
 (ambdim : ℕ)
-(coords : X → (fin ambdim → R))
+(coords : X → finvec ambdim R)
 (inj : injective coords)
 
-def coords {X : Type*} [cX : has_coordinates R X] : X → (fin cX.ambdim → R) :=
+def coords {X : Type*} [cX : has_coordinates R X] : X → finvec cX.ambdim R :=
 cX.coords
 
 /-- Magic causing `simps` to use `coords` on the left hand side of generated `simp` lemmas. -/
@@ -55,7 +55,7 @@ lemma injective_coords (X : Type*) [cX : has_coordinates R X] : injective (@coor
 cX.inj
 
 /-- Rⁿ tautologically has coordinates given by the identity. -/
-@[simps { fully_applied := ff }] instance has_coordinates.finvec (n : ℕ) : has_coordinates R (fin n → R) :=
+@[simps { fully_applied := ff }] instance has_coordinates.finvec (n : ℕ) : has_coordinates R (finvec n R) :=
 { ambdim := n,
   coords := λ x, x,
   inj := injective_id }
@@ -102,10 +102,8 @@ lemma coordinate_image_prod {X Y : Type*} [cX : has_coordinates R X] [cY : has_c
   coordinate_image R (X × Y) = coordinate_image R X ⊠ coordinate_image R Y :=
 begin
   apply set.ext,
-  refine finvec.append_equiv.forall_congr_left.mp _,
-  rintro ⟨v, w⟩,
-  change finvec.append_equiv (v, w) with v ++ w,
-  rw finvec.external_prod_def,
+  refine finvec.rec (λ v w, _),
+  rw finvec.mem_prod_iff,
   simp [coordinate_image, finvec.append.inj_iff]
 end
 
@@ -192,10 +190,10 @@ begin
   rintro (i|i); rw equiv.symm_apply_apply,
   { refine (hf _ i).trans _,
     refine congr_fun _ i,
-    exact (finvec.append_left _ _).symm },
+    exact finvec.left_append.symm },
   { refine (hg _ i).trans _,
     refine congr_fun _ i,
-    exact (finvec.append_right _ _).symm }
+    exact finvec.right_append.symm }
 end
 
 lemma is_reindexing.coords {X : Type*} [cX : has_coordinates R X] :
@@ -210,12 +208,12 @@ lemma is_reindexing.subtype.val {X : Type*} [cX : has_coordinates R X] {s : set 
   is_reindexing R (subtype.val : s → X) :=
 ⟨id, λ x j, rfl⟩
 
-lemma is_reindexing.fin.init {n : ℕ} :
-  is_reindexing R (fin.init : (fin (n+1) → R) → (fin n → R)) :=
+lemma is_reindexing.finvec.init {n : ℕ} :
+  is_reindexing R (finvec.init : (finvec (n+1) R) → (finvec n R)) :=
 ⟨fin.cast_succ, λ x j, rfl⟩
 
-lemma is_reindexing.fin.snoc {n : ℕ} :
-  is_reindexing R (λ (p : (fin n → R) × R), (fin.snoc p.1 p.2 : fin (n+1) → R)) :=
+lemma is_reindexing.finvec.snoc {n : ℕ} :
+  is_reindexing R (λ (p : finvec n R × R), p.1.snoc p.2) :=
 ⟨id, by { intros x j, rw finvec.snoc_eq_append, refl }⟩
 
 end reindexing

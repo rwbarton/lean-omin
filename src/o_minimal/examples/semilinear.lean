@@ -28,7 +28,7 @@ instance foo (α : Type*) : semimodule K (α → R) :=
 @pi.semimodule α (λ i, R) K _ _
 (λ i, by { dsimp, apply @ordered_semimodule.to_semimodule K R _, })
 
-def semilinear_function_type (n : ℕ) : submodule K ((fin n → R) → R) :=
+def semilinear_function_type (n : ℕ) : submodule K (finvec n R → R) :=
 { carrier := {f | ∃ (k : fin n → K) (r : R), f = λ x, ∑ i, k i • x i + r},
   zero_mem' := by { use [0, 0], ext, simp, },
   add_mem' :=
@@ -51,11 +51,11 @@ namespace semilinear_function_type
 variables {K R} {n : ℕ}
 
 instance : has_coe_to_fun (semilinear_function_type K R n) :=
-{ F := λ f, (fin n → R) → R,
+{ F := λ f, finvec n R → R,
   coe := λ f, f.1 }
 
 @[simp] lemma coe_eq_coe_fn (f : semilinear_function_type K R n) :
-  (coe f : (fin n → R) → R) = f := rfl
+  (coe f : finvec n R → R) = f := rfl
 
 @[simp] lemma coe_anon (f) (hf : f ∈ semilinear_function_type K R n) :
   ⇑(⟨f, hf⟩ : semilinear_function_type K R n) = f := rfl
@@ -66,7 +66,7 @@ def mk (k : fin n → K) (r : R) :
 ⟨_, k, r, rfl⟩
 
 @[simp] lemma coe_mk (k : fin n → K) (r : R) :
-  (mk k r : (fin n → R) → R) = λ x, ∑ i, k i • x i + r := rfl
+  (mk k r : finvec n R → R) = λ x, ∑ i, k i • x i + r := rfl
 
 end semilinear_function_type
 
@@ -146,7 +146,7 @@ begin
     simp only [neg_mul_eq_neg_mul_symm, finset.sum_neg_distrib, mul_assoc, ← finset.mul_sum],
     rw [← neg_add, ← mul_add, eq_neg_iff_add_eq_zero, ← mul_right_inj' h],
     simp only [h, mul_add, ne.def, not_false_iff, mul_zero, mul_inv_cancel_left'],
-    rw [add_left_comm, add_assoc], }
+    rw [add_left_comm, add_assoc], refl }
 end
 
 lemma semilinear_function_family_lt_constraint ⦃n : ℕ⦄
@@ -173,7 +173,7 @@ begin
       simp only [neg_mul_eq_neg_mul_symm, finset.sum_neg_distrib, mul_assoc, ← finset.mul_sum],
       rw [← neg_add, ← mul_add, ← sub_lt_zero, sub_eq_add_neg, ← mul_lt_mul_left_of_neg hc],
       rw [mul_zero, ← neg_add, ← neg_mul_eq_mul_neg, mul_add, mul_inv_cancel_left' (ne_of_lt hc)],
-      rw [neg_pos, add_right_comm], },
+      rw [neg_pos, add_right_comm], refl },
     { refine ⟨isolated_constraint.lt (mk (-c⁻¹ • k ∘ fin.cast_succ) (-c⁻¹ * r)), _⟩,
       rw [isolated_constraint.to_set],
       simp only [neg_mul_eq_neg_mul_symm, coe_mk, pi.neg_apply, function.comp_app,
@@ -184,7 +184,7 @@ begin
       simp only [neg_mul_eq_neg_mul_symm, finset.sum_neg_distrib, mul_assoc, ← finset.mul_sum],
       rw [← neg_add, ← mul_add, ← sub_lt_zero, sub_eq_add_neg, neg_neg, ← mul_lt_mul_left hc],
       simp only [mul_add, mul_inv_cancel_left', ne_of_gt hc, ne.def, not_false_iff, mul_zero],
-      rw [add_left_comm, add_assoc], }, }
+      rw [add_left_comm, add_assoc], refl }, }
 end
 
 variables (K)

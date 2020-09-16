@@ -34,26 +34,26 @@ namespace o_minimal
 open set
 open_locale finvec
 
-variables {R : Type*} (D B P : Π ⦃n : ℕ⦄, set (set (fin n → R)))
+variables {R : Type*} (D B P : Π ⦃n : ℕ⦄, set (set (finvec n R)))
 
 section struc
 
 /-- Standing hypotheses for this module. -/
 structure finite_inter_struc_hypotheses : Prop :=
 (definable_iff_finite_union_basic :
-  ∀ {n} {s : set (fin n → R)}, D s ↔ s ∈ finite_union_closure (@B n))
+  ∀ {n} {s : set (finvec n R)}, D s ↔ s ∈ finite_union_closure (@B n))
 (basic_iff_finite_inter_primitive :
-  ∀ {n} {s : set (fin n → R)}, B s ↔ s ∈ finite_inter_closure (@P n))
+  ∀ {n} {s : set (finvec n R)}, B s ↔ s ∈ finite_inter_closure (@P n))
 (definable_compl_primitive :
-  ∀ {n} {s : set (fin n → R)}, P s → D sᶜ)
+  ∀ {n} {s : set (finvec n R)}, P s → D sᶜ)
 (basic_r_prod_primitive :
-  ∀ {n} {s : set (fin n → R)}, P s → B (U 1 ⊠ s))
+  ∀ {n} {s : set (finvec n R)}, P s → B (finvec.univ_prod 1 s))
 (basic_primitive_prod_r :
-  ∀ {n} {s : set (fin n → R)}, P s → B (s ⊠ U 1))
+  ∀ {n} {s : set (finvec n R)}, P s → B (finvec.prod_univ s 1))
 (definable_eq_outer :
-  ∀ {n}, D ({x | x 0 = x (fin.last _)} : set (R^(n+1))))
+  ∀ {n}, D ({x | x 0 = x.last} : set (finvec (n + 1) R)))
 (definable_proj1_basic :
-  ∀ {n} {s : set (fin (n+1) → R)}, B s → D (finvec.left '' s))
+  ∀ {n} {s : set (finvec (n + 1) R)}, B s → D (finvec.left '' s))
 
 variables {D B P}
 
@@ -65,11 +65,11 @@ local notation `B₀` := (λ {n : ℕ}, finite_inter_closure (@P n))
 private lemma key
   (H : finite_inter_struc_hypotheses D B₀ P) :
   finite_union_struc_hypotheses D B₀ :=
-have definable_of_basic : ∀ {n} {s : set (fin n → R)}, B₀ s → D s,
+have definable_of_basic : ∀ {n} {s : set (finvec n R)}, B₀ s → D s,
 from λ n s hs, -- TODO: Lean bug? `H.definable_iff_finite_union_basic.mpr` should work
   (finite_inter_struc_hypotheses.definable_iff_finite_union_basic H).mpr
     (finite_union_closure.basic hs),
-have promote_hypothesis : ∀ {n m : ℕ} (Φ : set (fin n → R) → set (fin m → R))
+have promote_hypothesis : ∀ {n m : ℕ} (Φ : set (finvec n R) → set (finvec m R))
   (hΦ₀ : Φ univ = univ) (hΦ₂ : ∀ {s t}, Φ (s ∩ t) = Φ s ∩ Φ t),
   (∀ ⦃s⦄, P s → B₀ (Φ s)) → (∀ ⦃s⦄, B₀ s → B₀ (Φ s)),
 from λ n m Φ hΦ₀ hΦ₂, preserves_finite_inters.bind { map_univ := @hΦ₀, map_inter := @hΦ₂ },
@@ -101,14 +101,14 @@ from λ n m Φ hΦ₀ hΦ₂, preserves_finite_inters.bind { map_univ := @hΦ₀
   definable_r_prod_basic := begin
     intros n s hs,
     apply definable_of_basic,
-    refine promote_hypothesis (λ s, U 1 ⊠ s) _ _ (λ s h, H.basic_r_prod_primitive h) hs;
-    intros; ext; simp [finvec.external_prod_def]
+    refine promote_hypothesis (λ s, finvec.univ_prod 1 s) _ _ (λ s h, H.basic_r_prod_primitive h) hs;
+    intros; ext; simp [finvec.univ_prod]
   end,
   definable_basic_prod_r := begin
     intros n s hs,
     apply definable_of_basic,
-    refine promote_hypothesis (λ s, s ⊠ U 1) _ _ (λ s h, H.basic_primitive_prod_r h) hs;
-    intros; ext; simp [finvec.external_prod_def]
+    refine promote_hypothesis (λ s, finvec.prod_univ s 1) _ _ (λ s h, H.basic_primitive_prod_r h) hs;
+    intros; ext; simp [finvec.prod_univ]
   end,
   definable_eq_outer := H.definable_eq_outer,
   definable_proj1_basic := H.definable_proj1_basic }
@@ -134,9 +134,9 @@ section o_minimal
 variables (D B P) [DUNLO R]
 
 structure finite_inter_o_minimal_hypotheses extends finite_inter_struc_hypotheses D B P : Prop :=
-(definable_lt : D {x : fin 2 → R | x 0 < x 1})
-(definable_const : ∀ {r}, D {x : fin 1 → R | x 0 = r})
-(tame_of_primitive : ∀ {s : set (fin 1 → R)}, P s → tame {r | (λ _, r : fin 1 → R) ∈ s})
+(definable_lt : D {x : finvec 2 R | x 0 < x 1})
+(definable_const : ∀ {r}, D {x : finvec 1 R | x 0 = r})
+(tame_of_primitive : ∀ {s : set (finvec 1 R)}, P s → tame {r | (λ _, r : finvec 1 R) ∈ s})
 
 variables {D B P} (H : finite_inter_o_minimal_hypotheses D B P)
 

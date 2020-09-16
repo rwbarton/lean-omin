@@ -11,10 +11,10 @@ for every definable map φ : T → S, precomposition by φ
 preserves definable functions into X. -/
 -- TODO: Refactor to be prior to def_set/def_fun?
 class definable_presheaf (X : Type*) :=
-(definable : Π {n : ℕ} {s : set (fin n → R)} (ds : def_set S s),
+(definable : Π {n : ℕ} {s : set (finvec n R)} (ds : def_set S s),
   (s → X) → Prop)
-(definable_precomp : Π {n m : ℕ} {s : set (fin n → R)} {ds : def_set S s}
-  {t : set (fin m → R)} {dt : def_set S t} (φ : t → s)
+(definable_precomp : Π {n m : ℕ} {s : set (finvec n R)} {ds : def_set S s}
+  {t : set (finvec m R)} {dt : def_set S t} (φ : t → s)
   (dφ : @def_fun R S _ _ (is_definable.subtype dt) _ _ (is_definable.subtype ds) φ)
 --(dφ : S.definable {z | ∃ (hz : finvec.left z ∈ t), (φ ⟨finvec.left z, hz⟩).val = finvec.right z})
   (f : s → X), definable ds f → definable dt (f ∘ φ))
@@ -35,7 +35,7 @@ def definable_presheaf_of_is_definable {X : Type*} [has_coordinates R X] [is_def
 
 structure defin {X : Type*} [definable_presheaf S X] {Y : Type*} [definable_presheaf S Y]
   (F : X → Y) : Prop :=
-(preserves_definable : ∀ {n : ℕ} {s : set (fin n → R)} (ds : def_set S s) {f : s → X},
+(preserves_definable : ∀ {n : ℕ} {s : set (finvec n R)} (ds : def_set S s) {f : s → X},
   definable_presheaf.definable ds f → definable_presheaf.definable ds (F ∘ f))
 
 section yoneda

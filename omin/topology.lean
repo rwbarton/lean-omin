@@ -20,7 +20,7 @@ local attribute [instance] preorder.topology
 
 variables (X)
 def coordinate_topology : topological_space X :=
-topological_space.induced (@coords R X _) (by apply_instance)
+topological_space.induced (@coords R X _) (show topological_space (fin _ → R), by apply_instance)
 
 end
 
@@ -63,8 +63,10 @@ variables [is_definable S X] [is_definable S Y] [is_definable S Z] [is_definable
 
 lemma def_interior {s : set X} (hs : def_set S s) : def_set S (interior R s) :=
 begin
+  -- TODO: would it make more sense to use `fin _ → R` for the types of `l`, `u`?
+  -- bring back instance for `fin n → R` (or `fin n → X`)?
   suffices : def_set S
-    {x | ∃ (l u : fin _ → R), (∀ i, l i < coords R x i ∧ coords R x i < u i)
+    {x | ∃ (l u : finvec _ R), (∀ i, l i < coords R x i ∧ coords R x i < u i)
          ∧ ∀ y, (∀ i, l i < coords R y i ∧ coords R y i < u i) → y ∈ s},
   { convert this,
     ext x,

@@ -297,10 +297,10 @@ let ⟨a⟩ := H in λ b₁ b₂ h, congr_fun h a
 
 /-- An alternate constructor expressed in terms of low-level definability. -/
 lemma o_minimal.mk' (S : struc R)
-  (definable_lt : S.definable {x : fin 2 → R | x 0 < x 1})
-  (definable_const : ∀ (r : R), S.definable {x : fin 1 → R | x 0 = r})
+  (definable_lt : S.definable {x : finvec 2 R | x 0 < x 1})
+  (definable_const : ∀ (r : R), S.definable {x : finvec 1 R | x 0 = r})
   (tame_of_definable :
-    ∀ (s : set (fin 1 → R)), S.definable s → tame {r | (λ _, r : fin 1 → R) ∈ s}) :
+    ∀ (s : set (finvec 1 R)), S.definable s → tame {r | (λ _, r : finvec 1 R) ∈ s}) :
   o_minimal S :=
 { definable_val := begin
     intro r,
@@ -321,11 +321,11 @@ lemma o_minimal.mk' (S : struc R)
     convert definable_lt,
     apply set.ext,
     simp_rw [set.mem_image],
-    change ∀ (x : fin 2 → R), _ ↔ x 0 < x 1,
-    rw finvec.fin_two_fun_equiv_prod_self.forall_congr_left',
+    change ∀ (x : finvec 2 R), _ ↔ x 0 < x 1,
+    rw finvec.finvec_two_equiv_prod_self.forall_congr_left',
     rintro ⟨x₀, x₁⟩,
     change _ ↔ x₀ < x₁,
-    simp [has_coordinates.prod_coords, finvec.fin_two_fun_equiv_prod_self,
+    simp [has_coordinates.prod_coords, finvec.finvec_two_equiv_prod_self,
       finvec.append.inj_iff, function.const_injective.eq_iff, ←and_assoc]
   end,
   tame_of_def := begin

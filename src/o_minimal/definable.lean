@@ -33,8 +33,8 @@ begin
   subst i
 end
 
--- TODO: Generalize to [is_definable S X] : is_definable S (fin n → X)
-instance is_definable.rn {n : ℕ} : is_definable S (fin n → R) :=
+-- TODO: Generalize to [is_definable S X] : is_definable S (finvec n X)
+instance is_definable.rn {n : ℕ} : is_definable S (finvec n R) :=
 begin
   constructor,
   convert S.definable_univ n,
@@ -173,7 +173,7 @@ begin
   convert S.definable_proj hs using 1,
   ext z,
   rw [image_image, image_image],
-  simp only [has_coordinates.prod_coords, finvec.append_left]
+  simp only [has_coordinates.prod_coords, finvec.left_append]
 end
 
 -- Is it better to use `{p : Y × X | s p.2 p.1}`?
@@ -228,7 +228,7 @@ begin
     (S.definable_external_prod (is_definable.definable S X) (is_definable.definable S X))
     S.definable_diag_rn,
   ext z,
-  rw [mem_inter_iff, finvec.external_prod_def],
+  rw [mem_inter_iff, finvec.mem_prod_iff],
   change _ ↔ _ ∧ finvec.left z = finvec.right z,
   split,
   { rintro ⟨⟨x, y⟩, h, rfl⟩,
@@ -237,7 +237,7 @@ begin
   { rintro ⟨⟨hz₁, _⟩, hz₂⟩,
     rcases hz₁ with ⟨x, hx⟩,
     refine ⟨⟨x, x⟩, rfl, _⟩,
-    convert finvec.append_left_right _,
+    convert finvec.left_append_right _,
     refine finvec.append.inj_iff.mpr _,
     simp [hx, hz₂] }
 end
@@ -300,12 +300,12 @@ begin
   { rintro ⟨⟨x, y⟩, h, rfl⟩,
     change f x = y at h, subst y,
     show _ ∧ _ ∧ _,
-    simp only [mem_range_self, and_true, image_univ, has_coordinates.prod_coords, finvec.append_left, finvec.append_right],
-    refine ⟨⟨⟨x, _⟩, ⟨⟩⟩, _⟩,
+    simp only [mem_range_self, and_true, image_univ, has_coordinates.prod_coords, finvec.left_append, finvec.right_append, finvec.append_mem_prod_univ_iff],
+    refine ⟨⟨x, _⟩, _⟩,
     { simp },
     { ext i,
       apply hf, }, },
-  { rintro ⟨⟨⟨x, hx⟩, ⟨⟩⟩, ⟨hz, ⟨y, ⟨⟩, hy⟩⟩⟩,
+  { rintro ⟨⟨x, hx⟩, ⟨hz, ⟨y, ⟨⟩, hy⟩⟩⟩,
     simp only [mem_image, mem_set_of_eq],
     use [(x,y)],
     split,
@@ -315,7 +315,7 @@ begin
       rw ← hf,
       rw [← hx, ← hy] at hz,
       exact congr_fun hz i },
-    { simp [hx, hy], } }
+    { simp [hx, hy] } }
 end
 
 lemma def_fun.preimage {f : X → Y} (hf : def_fun S f) {s : set Y} (hs : def_set S s) :
@@ -332,7 +332,7 @@ is_reindexing.def_fun (is_reindexing.coords R)
 lemma def_fun.coord (i : fin (has_coordinates.ambdim R X)) : def_fun S (λ x : X, coords R x i) :=
 is_reindexing.def_fun (is_reindexing.coord R i)
 
-lemma def_fun.coord_rn {n : ℕ} (i : fin n) : def_fun S (λ x : fin n → R, x i) :=
+lemma def_fun.coord_rn {n : ℕ} (i : fin n) : def_fun S (λ x : finvec n R, x i) :=
 def_fun.coord i
 
 lemma def_fun.fst : def_fun S (prod.fst : X × Y → X) :=
@@ -371,19 +371,15 @@ lemma def_fun_subtype_val {s : set X} {hs : def_set S s} :
 by haveI := is_definable.subtype hs; exact
 (is_reindexing.subtype.val R).def_fun
 
--- TODO: Lean has trouble with the complicated type of `fin.init`.
--- We should replace it with a nondependent version everywhere.
-lemma def_fun.fin.init {n : ℕ} :
-  def_fun S (λ x : (fin (n+1) → R), (fin.init x : fin n → R)) :=
-(is_reindexing.fin.init R).def_fun
+lemma def_fun.finvec.init {n : ℕ} : def_fun S (λ x : finvec (n+1) R, x.init) :=
+(is_reindexing.finvec.init R).def_fun
 
-lemma def_fun.fin.snoc' {n : ℕ} :
-  def_fun S (λ (p : (fin n → R) × R), (fin.snoc p.1 p.2 : fin (n+1) → R)) :=
-(is_reindexing.fin.snoc R).def_fun
+lemma def_fun.finvec.snoc' {n : ℕ} : def_fun S (λ p : finvec n R × R, p.1.snoc p.2) :=
+(is_reindexing.finvec.snoc R).def_fun
 
-lemma def_fun.fin.snoc {n : ℕ} {f : X → fin n → R} (hf : def_fun S f) {g : X → R} (hg : def_fun S g) :
-  def_fun S (λ x, (fin.snoc (f x) (g x) : fin (n+1) → R)) :=
-(@def_fun.fin.snoc' R S n).comp (hf.prod' hg)
+lemma def_fun.finvec.snoc {n : ℕ} {f : X → finvec n R} (hf : def_fun S f) {g : X → R} (hg : def_fun S g) :
+  def_fun S (λ x, (f x).snoc (g x)) :=
+def_fun.finvec.snoc'.comp (hf.prod' hg)
 
 lemma def_set_eq {f g : X → Y} (hf : def_fun S f) (hg : def_fun S g) :
   def_set S {x | f x = g x} :=

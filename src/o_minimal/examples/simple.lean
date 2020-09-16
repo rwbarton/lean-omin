@@ -19,7 +19,7 @@ namespace simple_function_type
 variables {R}
 
 /-- The interpretation of a code for a simple function. -/
-protected def to_fun {n : ℕ} : simple_function_type R n → (fin n → R) → R
+protected def to_fun {n : ℕ} : simple_function_type R n → finvec n R → R
 | (const r) := λ x, r
 | (coord i) := λ x, x i
 
@@ -30,8 +30,8 @@ def extend_left {n : ℕ} :
 | (coord i) := coord i.succ
 
 lemma to_fun_extend_left {n : ℕ} (f : simple_function_type R n) :
-  f.extend_left.to_fun = f.to_fun ∘ fin.tail :=
-by cases f; ext; simp [simple_function_type.to_fun, extend_left, fin.tail]
+  f.extend_left.to_fun = f.to_fun ∘ finvec.tail :=
+by cases f; ext; simp [simple_function_type.to_fun, extend_left, finvec.tail]
 
 def extend_right {n : ℕ} :
   simple_function_type R n → simple_function_type R (n+1)

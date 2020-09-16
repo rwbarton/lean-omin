@@ -32,26 +32,26 @@ namespace o_minimal
 open set
 open_locale finvec
 
-variables {R : Type*} (D B : Π ⦃n : ℕ⦄, set (set (fin n → R)))
+variables {R : Type*} (D B : Π ⦃n : ℕ⦄, set (set (finvec n R)))
 
 /-- Standing hypotheses for this module. -/
 structure finite_union_struc_hypotheses : Prop :=
 (definable_iff_finite_union_basic :
-  ∀ {n} {s : set (fin n → R)}, D s ↔ s ∈ finite_union_closure (@B n))
+  ∀ {n} {s : set (finvec n R)}, D s ↔ s ∈ finite_union_closure (@B n))
 (definable_univ :
-  ∀ {n}, D (U n))
+  ∀ {n}, D (set.univ : set (finvec n R)))
 (definable_basic_inter_basic :
-  ∀ {n} {s t : set (fin n → R)}, B s → B t → D (s ∩ t))
+  ∀ {n} {s t : set (finvec n R)}, B s → B t → D (s ∩ t))
 (definable_compl_basic :
-  ∀ {n} {s : set (fin n → R)}, B s → D sᶜ)
+  ∀ {n} {s : set (finvec n R)}, B s → D sᶜ)
 (definable_r_prod_basic :
-  ∀ {n} {s : set (fin n → R)}, B s → D (U 1 ⊠ s))
+  ∀ {n} {s : set (finvec n R)}, B s → D (finvec.univ_prod 1 s))
 (definable_basic_prod_r :
-  ∀ {n} {s : set (fin n → R)}, B s → D (s ⊠ U 1))
+  ∀ {n} {s : set (finvec n R)}, B s → D (finvec.prod_univ s 1))
 (definable_eq_outer :
-  ∀ {n}, D ({x | x 0 = x (fin.last _)} : set (R^(n+1))))
+  ∀ {n}, D ({x | x 0 = x.last} : set (finvec (n + 1) R)))
 (definable_proj1_basic :
-  ∀ {n} {s : set (fin (n+1) → R)}, B s → D (finvec.left '' s))
+  ∀ {n} {s : set (finvec (n + 1) R)}, B s → D (finvec.left '' s))
 
 variables {D B}
 
@@ -65,7 +65,7 @@ lemma finite_union_struc_hypotheses.D_eq_finite_union_closure_B :
 by { ext, apply H.definable_iff_finite_union_basic }
 
 /--
-Suppose Φ : set (fin n → R) → set (fin m → R) is an operation
+Suppose Φ : set (finvec n R) → set (finvec m R) is an operation
 which commutes with finite unions.
 Then if (s ∈ B → Φ s ∈ D) then (s ∈ D → Φ s ∈ D).
 Examples of Φ: product with R¹ on either side; projection.
@@ -74,10 +74,10 @@ Only uses the assumption `D = finite_union_closure B`.
 TODO: Generalize this to the setting of for_mathlib.closure.
 -/
 lemma finite_union_struc_hypotheses.promote_hypothesis {n m : ℕ}
-  (Φ : set (fin n → R) → set (fin m → R)) (hΦ₀ : Φ ∅ = ∅)
+  (Φ : set (finvec n R) → set (finvec m R)) (hΦ₀ : Φ ∅ = ∅)
   (hΦ₂ : ∀ {s t}, Φ (s ∪ t) = Φ s ∪ Φ t) :
-  (∀ ⦃s : set (fin n → R)⦄, B s → D (Φ s)) →
-  (∀ ⦃s : set (fin n → R)⦄, D s → D (Φ s)) :=
+  (∀ ⦃s : set (finvec n R)⦄, B s → D (Φ s)) →
+  (∀ ⦃s : set (finvec n R)⦄, D s → D (Φ s)) :=
 begin
   cases H.D_eq_finite_union_closure_B,
   intros h,
@@ -114,13 +114,13 @@ def struc_of_finite_union : struc R :=
   end,
   definable_r_prod := begin
     intro n,
-    refine H.promote_hypothesis (λ s, U 1 ⊠ s) _ _ (λ s h, H.definable_r_prod_basic h);
-    intros; ext; simp [finvec.external_prod_def],
+    refine H.promote_hypothesis (λ s, finvec.univ_prod 1 s) _ _ (λ s h, H.definable_r_prod_basic h);
+    intros; ext; simp [finvec.univ_prod]
   end,
   definable_prod_r := begin
     intro n,
-    refine H.promote_hypothesis (λ s, s ⊠ U 1) _ _ (λ s h, H.definable_basic_prod_r h);
-    intros; ext; simp [finvec.external_prod_def],
+    refine H.promote_hypothesis (λ s, finvec.prod_univ s 1) _ _ (λ s h, H.definable_basic_prod_r h);
+    intros; ext; simp [finvec.prod_univ],
   end,
   definable_eq_outer := H.definable_eq_outer,
   definable_proj1 := begin
@@ -136,9 +136,9 @@ section o_minimal
 variables (D B) [DUNLO R]
 
 structure finite_union_o_minimal_hypotheses extends finite_union_struc_hypotheses D B : Prop :=
-(definable_lt : D {x : fin 2 → R | x 0 < x 1})
-(definable_const : ∀ {r}, D {x : fin 1 → R | x 0 = r})
-(tame_of_basic : ∀ {s : set (fin 1 → R)}, B s → tame {r | (λ _, r : fin 1 → R) ∈ s})
+(definable_lt : D {x : finvec 2 R | x 0 < x 1})
+(definable_const : ∀ {r}, D {x : finvec 1 R | x 0 = r})
+(tame_of_basic : ∀ {s : set (finvec 1 R)}, B s → tame {r | (λ _, r : finvec 1 R) ∈ s})
 
 variables {D B} (H : finite_union_o_minimal_hypotheses D B)
 
