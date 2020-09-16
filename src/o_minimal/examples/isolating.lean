@@ -465,42 +465,6 @@ begin
     simp }
 end
 
--- TODO: for_mathlib
-lemma DUNLO_lemma (lower upper : finset R) :
-  (∃ x, (∀ g ∈ lower, g < x) ∧ (∀ h ∈ upper, x < h)) ↔
-  ∀ (g ∈ lower) (h ∈ upper), g < h :=
-begin
-  split,
-  { rintro ⟨x, hx₁, hx₂⟩ g Hg h Hh,
-    exact lt_trans (hx₁ g Hg) (hx₂ h Hh) },
-  { letI dlo := classical.DLO R,      -- TODO: This isn't implied by `classical`?
-    -- TODO: maybe reformulate all this into a useful lemma:
-    -- (s : finset R) : s = ∅ ∨ ∃ max ∈ s, ∀ i ∈ s, i ≤ max
-    -- Pretty similar to `exists_max_image`.
-    cases hlower : lower.max with lmax;
-      [{ rw finset.max_eq_none at hlower, subst lower },
-       { have le_lmax : ∀ g ∈ lower, g ≤ lmax,
-         { intros g H, apply finset.le_max_of_mem H hlower } }],
-    all_goals {                 -- TODO: can't we write it using `;`?
-    cases hupper : upper.min with umin;
-      [{ rw finset.min_eq_none at hupper, subst upper },
-       { have umin_le : ∀ h ∈ upper, umin ≤ h,
-         { intros h H, apply finset.min_le_of_mem H hupper } }] },
-    { simp },
-    { suffices : ∃ (x : R), ∀ (h : R), h ∈ upper → x < h, { simpa },
-      obtain ⟨x, hx⟩ := no_bot umin,
-      exact ⟨x, λ h H, lt_of_lt_of_le hx (umin_le h H)⟩ },
-    { suffices : ∃ (x : R), ∀ (g : R), g ∈ lower → g < x, { simpa },
-      obtain ⟨x, hx⟩ := no_top lmax,
-      exact ⟨x, λ g H, lt_of_le_of_lt (le_lmax g H) hx⟩ },
-    { intro Hgh,
-      specialize Hgh lmax (finset.mem_of_max hlower) umin (finset.mem_of_min hupper),
-      obtain ⟨x, hx₁, hx₂⟩ := dense Hgh,
-      exact ⟨x,
-        λ g H, lt_of_le_of_lt (le_lmax g H) hx₁,
-        λ h H, lt_of_lt_of_le hx₂ (umin_le h H)⟩ } }
-end
-
 include hF
 
 -- Now we show that the projection of the set described by a triangular system of constraints
@@ -543,7 +507,7 @@ begin
     simp only [finvec.last, fin.init_snoc, fin.snoc_last, exists_and_distrib_right],
     congr',
     classical,
-    have := DUNLO_lemma (lower.image (λ (g : F n), g y)) (upper.image (λ (h : F n), h y)),
+    have := order_constraints_feasible_iff (lower.image (λ (g : F n), g y)) (upper.image (λ (h : F n), h y)),
     simpa only [←finset.mem_coe, finset.coe_image, ball_image_iff, iff_iff_eq] using this.symm }
 end
 
