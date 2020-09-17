@@ -3,6 +3,13 @@ import for_mathlib.fin
 import tactic.abel
 import tactic.fin_cases
 
+/-
+Finite vectors, implemented as functions on `fin n`.
+The main advantage of `finvec` over alternatives like `vector` is that
+extracting coordinates (components) of a `finvec` is just function application,
+so it's easy to reason about things like permuting coordinates.
+-/
+
 /-- A (homogeneous) "vector" of `n` `α`s, implemented as a function from `fin n`.
 The `j`th component of such a vector `x` (where `j : fin n`) is simply `x j`. -/
 def finvec (n : ℕ) (α : Type*) : Type* := fin n → α
@@ -315,6 +322,20 @@ begin
   split,
   { rw [left_eq_init, init_snoc] },
   { rw [right_eq_last, last_snoc] }
+end
+
+-- TODO: add versions for `left`, `right`?
+lemma mem_image_init {s : set (finvec (n + 1) α)} {y : finvec n α} :
+  y ∈ finvec.init '' s ↔ ∃ z : α, finvec.snoc y z ∈ s :=
+begin
+  split; intro h,
+  { obtain ⟨x, hx, rfl⟩ := h,
+    refine ⟨x.last, _⟩,
+    rw finvec.init_snoc_last,
+    exact hx },
+  { obtain ⟨z, hz⟩ := h,
+    refine ⟨finvec.snoc y z, hz, _⟩,
+    simp }
 end
 
 -- TODO: comparison to prod, fin.snoc.

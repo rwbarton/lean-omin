@@ -29,10 +29,6 @@ Examples:
   form an isolating family, which defines the o-minimal structure of semilinear sets.
 -/
 
--- TODO: Replace this module's use of `fin.init` and `fin.tail` with `finvec` versions.
--- This should simplify some proofs (which were artificially complicated by
--- the partial refactor in favor of finvec).
-
 namespace o_minimal
 
 open set
@@ -64,7 +60,7 @@ namespace isolated_constraint
 
 variables {F}
 
--- TODO: should we use `fin.init x` instead of `F.extend_right`?
+-- TODO: should we use `finvec.init x` instead of `F.extend_right`?
 -- (They're equal by hypothesis, but not definitionally.)
 def to_set {n : ℕ} :
   isolated_constraint F n → set (finvec (n + 1) R)
@@ -113,10 +109,10 @@ variables {F}
 /-- The set defined by some last variable constraints. -/
 def to_set {n : ℕ} :
   Π (c : last_variable_constraints F n), set (finvec (n + 1) R)
-| (eq f) := {x | x.last = f (fin.init x)}
+| (eq f) := {x | x.last = f x.init}
 | (between lower upper) :=
-    (⋂ (g : F n) (H : g ∈ lower), {x | g (fin.init x) < x.last}) ∩
-    (⋂ (h : F n) (H : h ∈ upper), {x | x.last < h (fin.init x)})
+    (⋂ (g : F n) (H : g ∈ lower), {x | g x.init < x.last}) ∩
+    (⋂ (h : F n) (H : h ∈ upper), {x | x.last < h x.init})
 
 @[simp]
 lemma to_set_between_empty_empty {n : ℕ} :
@@ -146,7 +142,7 @@ def to_set :
   Π {n : ℕ} (t : triangular_constraints F n), set (finvec n R)
 | 0 tt := univ
 | 0 ff := ∅
-| (n+1) (step c t') := c.to_set ∩ {x | fin.init x ∈ t'.to_set}
+| (n+1) (step c t') := c.to_set ∩ {x | x.init ∈ t'.to_set}
 
 end triangular_constraints
 
@@ -212,7 +208,7 @@ triangular_constraints.step (last_variable_constraints.between ∅ ∅) t
 
 @[simp]
 lemma triangular_constraints.to_set_extend_right {n : ℕ} {t : triangular_constraints F n} :
-  t.extend_right.to_set = {x | fin.init x ∈ t.to_set} :=
+  t.extend_right.to_set = {x | x.init ∈ t.to_set} :=
 by simp [triangular_constraints.extend_right, triangular_constraints.to_set]
 
 variables (F)
@@ -305,10 +301,10 @@ begin
     -- a constraint that can be pushed down to the previous level, using the inductive hypothesis.
     { obtain ⟨t, ht⟩ := IH (constrained.EQ f g),
       refine ⟨t.extend_right, _⟩,
-      simp [ht, isolated_constraint.to_set], refl },
+      simp [ht, isolated_constraint.to_set] },
     { obtain ⟨t, ht⟩ := IH (constrained.LT f g),
       refine ⟨t.extend_right, _⟩,
-      simp [ht, isolated_constraint.to_set], refl } }
+      simp [ht, isolated_constraint.to_set] } }
 end
 
 -- Now we show the sets described by triangular constraints are closed under finite intersections.
@@ -343,11 +339,11 @@ begin
     -- (The new constraints cut out the same set as the old last variable constraints
     -- at least when restricted to the set where t₁ holds.)
     have : ∃ t₂'' : triangular_constraints F n,
-      t₁.to_set ∩ c₂.to_set = t₁.to_set ∩ {x | fin.init x ∈ t₂''.to_set},
+      t₁.to_set ∩ c₂.to_set = t₁.to_set ∩ {x | x.init ∈ t₂''.to_set},
     { -- We actually only care about the equality on the last variable, not all of t₁.
       suffices : ∃ t₂'' : triangular_constraints F n,
-        {x : finvec (n + 1) R | x.last = f (fin.init x)} ∩ c₂.to_set =
-        {x : finvec (n + 1) R | x.last = f (fin.init x)} ∩ {x | fin.init x ∈ t₂''.to_set},
+        {x : finvec (n + 1) R | x.last = f x.init} ∩ c₂.to_set =
+        {x : finvec (n + 1) R | x.last = f x.init} ∩ {x | x.init ∈ t₂''.to_set},
       { obtain ⟨t₂'', h⟩ := this,
         refine ⟨t₂'', _⟩,
         change (_ ∩ _) ∩ _ = (_ ∩ _) ∩ _,
@@ -362,10 +358,10 @@ begin
         -- TODO: maybe borrow proof ideas from the other case
         unfold last_variable_constraints.to_set,
         convert_to
-          {x : finvec (n + 1) R | x.last = f (fin.init x)} ∩
-          {x : finvec (n + 1) R | f (fin.init x) = f₂ (fin.init x)} =
-          {x : finvec (n + 1) R | x.last = f (fin.init x)} ∩
-          {x : finvec (n + 1) R | fin.init x ∈ triangular_constraints.to_set _},
+          {x : finvec (n + 1) R | x.last = f x.init} ∩
+          {x : finvec (n + 1) R | f x.init = f₂ x.init} =
+          {x : finvec (n + 1) R | x.last = f x.init} ∩
+          {x : finvec (n + 1) R | x.init ∈ triangular_constraints.to_set _},
         { ext x, simp only [mem_inter_iff, mem_set_of_eq], split; rintros ⟨_, _⟩; cc },
         congr,
         simp_rw ht,
@@ -385,8 +381,7 @@ begin
         simp only [mem_inter_iff, mem_set_of_eq],
         apply and_congr_right,
         intro hx,
-        dsimp only [last_variable_constraints.to_set, finvec, finvec.last, S] at ⊢ hx ht,
-        simp [hx, ht] } },
+        simp [last_variable_constraints.to_set, hx, ht], } },
     obtain ⟨t₂'', ht₂''⟩ := this,
     -- Using the inductive hypothesis, combine the constraints t₁', t₂' and t₂''.
     -- TODO: Can probably be expressed more efficiently using new IH form.
@@ -449,22 +444,6 @@ variables {F} (hF : F.is_isolating)
 
 section projection
 
--- TODO: `fin.init` and `fin.snoc` aren't great, resulting in some awkward phrasing here;
--- it's probably due to their dependent nature.
--- Compare a hypothetical
---   y ∈ fin.init '' s ↔ ∃ z : R, fin.snoc y z ∈ s
-lemma mem_image_fin_init {n : ℕ} {s : set (finvec (n + 1) R)} {y : finvec n R} :
-  y ∈ s.image fin.init ↔ ∃ z : R, (fin.snoc y z : fin (n + 1) → R) ∈ s :=
-begin
-  split; intro h,
-  { obtain ⟨x, hx, rfl⟩ := h,
-    refine ⟨x.last, _⟩,
-    simpa [finvec.last] using hx },
-  { obtain ⟨z, hz⟩ := h,
-    refine ⟨fin.snoc y z, hz, _⟩,
-    simp }
-end
-
 include hF
 
 -- Now we show that the projection of the set described by a triangular system of constraints
@@ -472,7 +451,7 @@ include hF
 -- For this we need the hypothesis that R is a DUNLO.
 
 lemma triangular_projection {n : ℕ} (t : triangular_constraints F (n+1)) :
-  ∃ t' : triangular_constraints F n, t'.to_set = t.to_set.image fin.init :=
+  ∃ t' : triangular_constraints F n, t'.to_set = t.to_set.image finvec.init :=
 begin
   rcases t with _ | _ | ⟨_, f | ⟨lower, upper⟩, t⟩,
   { -- Easy case: for an equality constraint,
@@ -480,11 +459,7 @@ begin
     refine ⟨t, _⟩,
     simp only [triangular_constraints.to_set, last_variable_constraints.to_set],
     ext y,
-    -- TODO: use mem_image_fin_init?
-    split; intro h,
-    { refine ⟨fin.snoc y (f y), ⟨_, _⟩, _⟩; simp [h, finvec.last] },
-    { obtain ⟨x, hx, rfl⟩ := h,
-      exact hx.2 } },
+    simp [finvec.mem_image_init] },
   { -- Harder case: for a between constraint,
     -- the constraint is satisfiable for given values of the earlier variables
     -- when all of the lower functions are less than all of the upper functions.
@@ -498,13 +473,9 @@ begin
     refine ⟨t', _⟩,
     rw ht',
     ext y,
-    rw mem_image_fin_init,
-    -- TODO: We should do some refactoring to avoid `fin.init`, `fin.snoc` etc.
-    -- For now we just try to make the old proof work.
-    simp only [S, triangular_constraints.to_set, last_variable_constraints.to_set,
-      mem_inter_eq, mem_Inter],
-    dsimp only [finvec, mem_set_of_eq],
-    simp only [finvec.last, fin.init_snoc, fin.snoc_last, exists_and_distrib_right],
+    rw finvec.mem_image_init,
+    simp only [triangular_constraints.to_set, last_variable_constraints.to_set,
+      mem_inter_eq, mem_Inter, exists_and_distrib_right, mem_set_of_eq, finvec.init_snoc, finvec.last_snoc],
     congr',
     classical,
     have := order_constraints_feasible_iff (lower.image (λ (g : F n), g y)) (upper.image (λ (h : F n), h y)),

@@ -50,7 +50,7 @@ structure function_family : Type (u+1) :=
   ∀ {n : ℕ} (f : carrier n), to_fun (extend_left f) = to_fun f ∘ finvec.tail)
 (extend_right : Π {n : ℕ}, carrier n → carrier (n+1))
 (to_fun_extend_right :
-  ∀ {n : ℕ} (f : carrier n), to_fun (extend_right f) = to_fun f ∘ fin.init)
+  ∀ {n : ℕ} (f : carrier n), to_fun (extend_right f) = to_fun f ∘ finvec.init)
 
 instance has_coe_to_fun.function_family : has_coe_to_fun (function_family R) :=
 ⟨_, function_family.carrier⟩
@@ -71,7 +71,7 @@ congr_fun (function_family.to_fun_coord F i) x
 congr_fun (F.to_fun_extend_left f) x
 
 @[simp] lemma function_family.extend_right_app (F : function_family R) {n : ℕ} {f : F n} {x} :
-  F.extend_right f x = f (fin.init x) :=
+  F.extend_right f x = f (finvec.init x) :=
 congr_fun (F.to_fun_extend_right f) x
 
 @[simp] lemma function_family.to_fun_eq_coe (F : function_family R) {n : ℕ} {f : F n} :
@@ -165,7 +165,7 @@ structure function_family_struc_hypotheses : Prop :=
 (primitive_iff_constrained :
   ∀ {n} {s : set (finvec n R)}, P s ↔ constrained F s)
 (definable_proj1_basic :
-  ∀ {n} {s : set (finvec (n + 1) R)}, B s → D (finvec.left '' s))
+  ∀ {n} {s : set (finvec (n + 1) R)}, B s → D (finvec.init '' s))
 
 variables {F D B P}
 

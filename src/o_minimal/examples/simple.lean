@@ -39,8 +39,8 @@ def extend_right {n : ℕ} :
 | (coord i) := coord i.cast_succ
 
 lemma to_fun_extend_right {n : ℕ} (f : simple_function_type R n) :
-  f.extend_right.to_fun = f.to_fun ∘ fin.init :=
-by cases f; ext; simp [simple_function_type.to_fun, extend_right, fin.init]
+  f.extend_right.to_fun = f.to_fun ∘ finvec.init :=
+by cases f; ext; simp [simple_function_type.to_fun, extend_right, finvec.init]
 
 end simple_function_type
 
