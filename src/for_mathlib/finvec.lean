@@ -54,6 +54,9 @@ end
 
 end set
 
+instance : unique (finvec 0 α) :=
+⟨⟨fin_zero_elim⟩, by { intro x, ext i, fin_cases i }⟩
+
 section prod
 
 /-! ### Products
@@ -116,6 +119,10 @@ congr_arg prod.fst (append_equiv.apply_symm_apply (x, y) : _)
 @[simp] lemma right_append {x : finvec n α} {y : finvec m α} : (x ++ y).right = y :=
 congr_arg prod.snd (append_equiv.apply_symm_apply (x, y) : _)
 
+lemma prod_ext {z z' : finvec (n + m) α} :
+  z = z' ↔ z.left = z'.left ∧ z.right = z'.right :=
+(append_equiv.apply_eq_iff_eq z z').symm.trans prod.mk.inj_iff
+
 lemma append.inj_iff {x x' : finvec n α} {y y' : finvec m α} :
   x ++ y = x' ++ y' ↔ x = x' ∧ y = y' :=
 by simp only [append, equiv.apply_eq_iff_eq, prod.mk.inj_iff]
@@ -125,6 +132,12 @@ by { ext ⟨_, _⟩, refl }
 
 lemma right_zero {x : finvec (0 + n) α} : x.right = x.cast (zero_add n) :=
 funext $ λ _, congr_arg x (by rw fin.nat_add_zero)
+
+@[simp] lemma append_zero {x : finvec n α} {y : finvec 0 α} : x ++ y = x :=
+begin
+  rw [prod_ext, left_append, left_zero, right_append],
+  simp
+end
 
 /-- The product (in the sense of `set.prod`) of sets of vectors,
 under the isomorphism `αⁿ × αᵐ ≅ αⁿ⁺ᵐ`. -/
@@ -370,9 +383,6 @@ begin
 end
 
 end tail
-
-instance : unique (finvec 0 α) :=
-⟨⟨fin_zero_elim⟩, by { intro x, ext i, fin_cases i }⟩
 
 /-- The canonical isomorphism `α² ≅ α × α`. -/
 -- TODO: This most likely needs some lemmas. See its use in `o_minimal.mk'`.

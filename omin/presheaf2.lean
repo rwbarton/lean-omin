@@ -93,6 +93,9 @@ def pt : Def S :=
   to_set := set.univ,
   is_definable := S.definable_univ 0 }
 
+instance pt.unique : unique (pt : Def S) :=
+⟨⟨⟨fin_zero_elim, trivial⟩⟩, λ x, by { ext i, fin_cases i }⟩
+
 /-! ### Presheaf stuff -/
 
 variables (S)
@@ -102,6 +105,7 @@ class definable_psh (X : Type*) :=
 (definable_precomp : ∀ {L K : Def S} (φ : L ⟶ K) {f : K → X},
   definable f → definable (f ∘ φ))
 
+-- TODO: apply bug??
 def definable {X : Type*} [definable_psh S X] (x : X) : Prop :=
 definable_psh.definable (λ (_ : (pt : Def S)), x)
 
@@ -116,6 +120,20 @@ instance Def.definable_psh (X : Def S) : definable_psh S X :=
     rintros L K φ f h,
     exact ((⟨f, h⟩ : K ⟶ X).comp φ).is_definable
   end }
+
+lemma pt.definable {K : Def S} {f : K → (pt : Def S)} : definable_psh.definable f :=
+begin
+  change S.definable _,
+  convert K.is_def_coords using 1,
+  ext x,
+  split,
+  { rintros ⟨⟨k, p⟩, -, rfl⟩,
+    refine ⟨k, trivial, _⟩,
+    simp },
+  { rintros ⟨k, -, rfl⟩,
+    refine ⟨⟨k, default _⟩, show _ = _, by cc, _⟩,
+    simp }
+end
 
 instance {X Y : Type*} [definable_psh S X] [definable_psh S Y] : definable_psh S (X × Y) :=
 { definable := λ K f, definable_psh.definable (prod.fst ∘ f) ∧ definable_psh.definable (prod.snd ∘ f),
@@ -140,13 +158,48 @@ instance function.definable_psh {X Y : Type*} [hX : definable_psh S X] [hY : def
 lemma definable_fun {X Y : Type*} [definable_psh S X] [definable_psh S Y]
   {f : X → Y} : definable S f ↔
   ∀ {K : Def S} (φ : K → X), definable_psh.definable φ → definable_psh.definable (f ∘ φ) :=
-sorry                           -- somehow have to use K × * ≃ K
+begin
+  split; intro H,
+  { intros K φ hφ,
+    -- TODO: This proof is awkward
+    specialize H K,
+    swap,
+    { exact (λ k, (default _, φ k)) },
+    exact H ⟨pt.definable, hφ⟩ },
+  { intros K φ hφ,
+    exact H _ hφ.2 }
+end
 
 lemma definable_app {X Y : Type*} [definable_psh S X] [definable_psh S Y]
   {f : X → Y} (hf : definable S f) {x : X} (hx : definable S x) : definable S (f x) :=
 begin
   rw definable_fun at hf,
   exact hf _ hx
+end
+
+lemma definable.app_ctx {Γ X Y : Type*} [definable_psh S Γ] [definable_psh S X] [definable_psh S Y]
+  {f : Γ → X → Y} (hf : definable S f) {x : Γ → X} (hx : definable S x) :
+  definable S (λ γ, f γ (x γ)) :=
+begin
+  rw definable_fun at ⊢ hf hx,
+  intros K φ hφ,
+  change definable_psh.definable (λ k, f (φ k) (x (φ k))),
+  specialize hf φ hφ,
+  specialize hf K,
+  swap, { exact λ k, (k, x (φ k)) },
+  exact hf ⟨(Def.id K).is_definable, hx φ hφ⟩
+end
+
+lemma definable_yoneda {K : Def S} {X : Type*} [definable_psh S X]
+  {f : K → X} : definable_psh.definable f ↔ definable S f :=
+begin
+  rw definable_fun,
+  split,
+  { intros h L φ hφ,
+    exact definable_psh.definable_precomp ⟨φ, hφ⟩ h },
+  { intros H,
+    refine H id _,
+    exact (Def.id K).is_definable }
 end
 
 lemma definable_prod_mk {X Y : Type*} [definable_psh S X] [definable_psh S Y] :
@@ -158,14 +211,163 @@ lemma definable_prod_mk {X Y : Type*} [definable_psh S X] [definable_psh S Y] :
 λ L g h L' g' h',
 ⟨definable_psh.definable_precomp ⟨λ x, (g' x).fst, h'.1⟩ h.2, h'.2⟩
 
+lemma definable_fst {X Y : Type*} [definable_psh S X] [definable_psh S Y] :
+  definable S (prod.fst : X × Y → X) :=
+begin
+  rw definable_fun,
+  intros K φ hφ,
+  exact hφ.1
+end
+
+lemma definable_snd {X Y : Type*} [definable_psh S X] [definable_psh S Y] :
+  definable S (prod.snd : X × Y → Y) :=
+begin
+  rw definable_fun,
+  intros K φ hφ,
+  exact hφ.2
+end
+
+lemma definable.prod_mk {W X Y : Type*} [definable_psh S W] [definable_psh S X] [definable_psh S Y]
+  {f : W → X} (hf : definable S f) {g : W → Y} (hg : definable S g) :
+  definable S (λ w, (f w, g w)) :=
+begin
+  rw definable_fun at ⊢ hf hg,
+  intros K φ hφ,
+  exact ⟨hf φ hφ, hg φ hφ⟩
+end
+
+lemma definable_fun₂ {X Y Z : Type*} [definable_psh S X] [definable_psh S Y] [definable_psh S Z]
+  {f : X → Y → Z} :
+  (∀ {L : Def S} (φ : L → X), definable S φ → definable S (f ∘ φ)) ↔
+  (∀ {L : Def S} (φ : L → X × Y), definable S φ → definable S (function.uncurry f ∘ φ)) :=
+begin
+  split; intro H,
+  { intros L φ hφ,
+    rw definable_fun at ⊢,
+    intros K ψ hψ,
+    have : definable S (prod.fst ∘ φ),
+    { rw ←definable_yoneda at ⊢ hφ,
+      exact hφ.1 },
+    specialize H (λ l, (φ l).1) this,
+    rw definable_fun at H,
+    specialize H ψ hψ,
+    specialize H K,
+    swap, { exact λ k, (k, (φ (ψ k)).2) },
+    refine H ⟨(Def.id K).is_definable, _⟩, clear H,
+    rw ←definable_yoneda at hφ,
+    exact definable_psh.definable_precomp ⟨ψ, hψ⟩ hφ.2 },
+  { intros L φ hφ,
+    rw definable_fun,
+    intros K ψ hψ,
+    intros K' ψ' hψ',
+    dsimp [function.uncurry, function.comp],
+    specialize H (λ k', (φ (ψ (ψ' k').1), (ψ' k').2)),
+    have : definable S (λ k', (φ (ψ (ψ' k').1), (ψ' k').2)),
+    { rw ←definable_yoneda at ⊢ hφ,
+      split,
+      { refine definable_psh.definable_precomp ⟨λ k', ψ (ψ' k').fst, _⟩ hφ,
+        exact (Hom.comp ⟨ψ, hψ⟩ ⟨_, hψ'.1⟩).is_definable },
+      { exact hψ'.2 } },
+    specialize H this,
+    rw definable_fun at H,
+    exact H _ (Def.id _).is_definable }
+end
+
+lemma definable_comp {X Y Z : Type*} [definable_psh S X] [definable_psh S Y] [definable_psh S Z] :
+  definable S (function.comp : (Y → Z) → (X → Y) → (X → Z)) :=
+begin
+  -- TODO: Make these 4 lines a lemma.
+  rw definable_fun,
+  intros L₁ φ₁ hφ₁,
+  rw definable_yoneda at ⊢ hφ₁,
+  revert L₁,
+  -- end lemma
+  rw definable_fun₂,
+  rw definable_fun₂,
+  rintros L φ hφ,
+  rw ←definable_yoneda at hφ,
+  obtain ⟨⟨hφ₁, hφ₂⟩, hφ₃⟩ := hφ,
+  rw definable_yoneda at hφ₁ hφ₂ hφ₃,
+  dsimp [function.uncurry, function.comp],
+  exact hφ₁.app_ctx (hφ₂.app_ctx hφ₃)
+end
+
+lemma definable.comp {X Y Z : Type*} [definable_psh S X] [definable_psh S Y] [definable_psh S Z]
+  {g : Y → Z} (hg : definable S g) {f : X → Y} (hf : definable S f) :
+  definable S (g ∘ f) :=
+definable_app (definable_app definable_comp hg) hf
+
+lemma definable.comp_ctx {Γ X Y Z : Type*} [definable_psh S Γ] [definable_psh S X] [definable_psh S Y] [definable_psh S Z]
+  {g : Γ → Y → Z} (hg : definable S g) {f : Γ → X → Y} (hf : definable S f) :
+  definable S (λ γ, g γ ∘ f γ) :=
+definable.app_ctx (definable.comp definable_comp hg) hf
+
+lemma definable_curry {X Y Z : Type*} [definable_psh S X] [definable_psh S Y] [definable_psh S Z] :
+  definable S (function.curry : (X × Y → Z) → X → Y → Z) :=
+begin
+  -- TODO: Make these 4 lines a lemma.
+  rw definable_fun,
+  intros L₁ φ₁ hφ₁,
+  rw definable_yoneda at ⊢ hφ₁,
+  revert L₁,
+  -- end lemma
+  rw definable_fun₂,
+  rw definable_fun₂,
+  rintros L φ hφ,
+  rw ←definable_yoneda at hφ,
+  obtain ⟨⟨hφ₁, hφ₂⟩, hφ₃⟩ := hφ,
+  rw definable_yoneda at hφ₁ hφ₂ hφ₃,
+  exact definable.app_ctx hφ₁ (hφ₂.prod_mk hφ₃)
+end
+
+instance Prop.definable_psh : definable_psh S Prop :=
+{ definable := λ K s, S.def_coords s,
+  definable_precomp := λ L K φ f hf, sorry } -- preimage
+
+instance set.definable_psh {X : Type*} [definable_psh S X] : definable_psh S (set X) :=
+show definable_psh S (X → Prop), by apply_instance
+
+lemma definable_and : definable S (∧) :=
+begin
+  suffices : definable S (λ r : Prop × Prop, r.1 ∧ r.2),
+  { exact definable_app definable_curry this },
+  rw definable_fun,
+  rintros K φ ⟨hφ₁, hφ₂⟩,
+  exact hφ₁.inter hφ₂
+end
+
+lemma definable.and {W : Type*} [definable_psh S W]
+  {f : W → Prop} (hf : definable S f) {g : W → Prop} (hg : definable S g) :
+  definable S (λ w, f w ∧ g w) :=
+definable.app_ctx (definable.comp definable_and hf) hg
+
+lemma definable_inter {X : Type*} [definable_psh S X] :
+  definable S ((∩) : set X → set X → set X) :=
+begin
+  suffices : definable S (λ (r : set X × set X) (x : X), r.1 x ∧ r.2 x),
+  { exact (definable_app definable_curry this : _) },
+  -- TODO: Make these 4 lines a lemma.
+  rw definable_fun,
+  intros L₁ φ₁ hφ₁,
+  rw definable_yoneda at ⊢ hφ₁,
+  revert L₁,
+  -- end lemma
+  rw definable_fun₂,
+  intros L φ hφ,
+  rw ←definable_yoneda at hφ,
+  obtain ⟨⟨hφ₁, hφ₂⟩, hφ₃⟩ := hφ,
+  rw definable_yoneda at hφ₁ hφ₂ hφ₃,
+  apply definable.and,
+  { exact hφ₁.app_ctx hφ₃ },
+  { exact hφ₂.app_ctx hφ₃ }
+end
+
 variables (S)
 
 /- TODO:
-* instance definable_psh S Prop
 * class represented [has_coordinates R X] expressing compatibility
 * prove this notion of definability of functions, sets reduces
   to the original one in the represented case
-* prove definability of basic constants (like `∩`)
 Then:
 * prove stuff like `is_least : set R → R → Prop` is definable
 -/
