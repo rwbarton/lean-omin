@@ -100,6 +100,7 @@ instance pt.unique : unique (pt : Def S) :=
 
 variables (S)
 
+-- TODO: generalize to Sort?
 class definable_psh (X : Type*) :=
 (definable : Π {K : Def S}, (K → X) → Prop)
 (definable_precomp : ∀ {L K : Def S} (φ : L ⟶ K) {f : K → X},
@@ -362,7 +363,82 @@ begin
   { exact hφ₂.app_ctx hφ₃ }
 end
 
+/-
+instance foo {X Y : Type*} [definable_psh S X] [definable_psh S Y]
+  {p : X → Prop}
+  : definable_psh S (Π (x : X) (h : p x), Y) :=
+sorry
+-/
+
+lemma definable_definable {X : Type*} [definable_psh S X] :
+  definable S (definable S : X → Prop) :=
+begin
+  rw definable_fun,
+  intros K φ hφ,
+  change S.def_coords _,
+  convert K.is_def_coords,
+  apply set.eq_univ_of_forall,
+  intro x,
+  change definable S (φ x),
+  apply definable_app,
+  { rw ←definable_yoneda, exact hφ },
+  -- now we need to know that every point of a representable guy
+  -- is definable. this needs definable constants!
+  sorry
+  -- In general, the definable elements of a structure
+  -- might or might not form a definable set.
+  -- Counterexample: take (ℝ, +, *) without constants;
+  -- definable elements are the algebraic real numbers,
+  -- but only tame sets can be definable.
+  -- However, once the structure has definable constants,
+  -- then everything is definable and of course the set `univ` is definable.
+end
+-- Important note: it is definitely *not* true that
+-- `definable S` = `set.univ` on *every* X with a definable_psh structure;
+-- just represented guys.
+
+/-
+similarly, in an o-minimal structure:
+
+lemma definable_finite [DUNLO R] [o_minimal S] :
+  definable S (set.finite : set R → Prop) := sorry
+
+because "finite" is equivalent to "does not contain an interval"
+on the tame = definable sets, which are the only ones that matter.
+-/
+
+instance self : definable_psh S R := sorry
+
 variables (S)
+
+#exit
+class definable_fam {X : Type*} [definable_psh S X] (Y : X → Sort*) :=
+(definable : Π {K : Def S} (x : K → X) (hx : definable_psh.definable x), (Π k, Y (x k)) → Prop)
+-- s.t. blah blah blah...
+
+instance moo {X : Type*} {Y : X → Type*} [definable_psh S X] [definable_fam S Y] :
+  definable_psh S (Π (x : X), Y x) :=
+sorry
+
+constant choice : Π (X : set R), X.nonempty → X
+
+example : definable S (set.nonempty : set R → Prop) :=
+sorry
+
+instance : definable_fam S (set.nonempty : set R → Prop) := sorry
+
+instance pi {X : Type*} [definable_psh S X] {Y Z : X → Sort*} [definable_fam S Y] [definable_fam S Z] :
+  definable_fam S (λ x, Y x → Z x) :=
+sorry
+
+instance subtype {X : Type*} [definable_psh S X] : definable_fam S (λ (s : set X), s) :=
+sorry
+
+example : definable S ((λ x hx₁ hx₂, choice x hx₁) : Π (X : set R), X.nonempty → X.nonempty → X) :=
+sorry
+
+-- can we do without this `definable_fam` stuff? even as a hack?
+-- or maybe stick with this for now?
 
 /- TODO:
 * class represented [has_coordinates R X] expressing compatibility
