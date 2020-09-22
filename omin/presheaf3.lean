@@ -23,7 +23,7 @@ instance function.psh' (X : Type) (Y : Type 1) [psh' S X] [psh' S Y] : psh' S (X
   psh'.definable f → psh'.definable (λ l, Φ (z l) (f l)) }
 -- plus coherence
 
-instance Pi.psh' (X : Type) [psh' S X] (Y : X → Type) _ : psh' S (Π (x : X), Y x) :=
+instance Pi.psh' (X : Type) [psh' S X] (Y : X → Type) : psh' S (Π (x : X), Y x) :=
 sorry
 
 end o_minimal
