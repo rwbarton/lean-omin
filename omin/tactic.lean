@@ -18,7 +18,14 @@ def sect.precomp {Γ' Γ : Def S} {X : Type*} [definable_psh S X]
 
 lemma begin_lem {X : Type*} [definable_psh S X] {x : X} :
   definable S x ↔ ∀ (Γ : Def S), definable_psh.definable (λ (γ : Γ), x) :=
-sorry
+begin
+  unfold definable,
+  split; intro H,
+  { intro Γ,
+    let u : Hom Γ pt := ⟨λ _, default _, by exact pt.definable⟩,
+    exact definable_psh.definable_precomp u H },
+  { apply H }
+end
 
 lemma intro_lem₁ {X Y : Type*} [definable_psh S X] [definable_psh S Y]
   (f : X → Y) :
@@ -31,17 +38,27 @@ lemma definable_fun' {Γ : Def S} {X Y : Type*} [definable_psh S X] [definable_p
   (∀ (Γ' : Def S) (π : Hom Γ' Γ) (g : Γ' ⊢ X),
    definable_psh.definable (λ γ_1, f (π.to_fun γ_1) (g.to_fun γ_1))) :=
 begin
-  sorry
+  split; intro H,
+  { intros Γ' π g,
+    have : definable_psh.definable (λ γ', (π.to_fun γ', g.to_fun γ')) :=
+      ⟨π.is_definable, g.definable⟩,
+    exact H Γ' this },
+  { intros M g hg,
+    exact H M ⟨_, hg.1⟩ ⟨_, hg.2⟩ }
 end
 
 lemma definable.app_ctx' {Γ : Def S} {X Y : Type*} [definable_psh S X] [definable_psh S Y]
   (f : Γ → X → Y) {hf : definable_psh.definable f} (x : Γ → X) {hx : definable_psh.definable x} :
   definable_psh.definable (λ γ, f γ (x γ)) :=
-sorry
+begin
+  have : definable_psh.definable (λ γ, (γ, x γ)) :=
+    ⟨(Def.id _).is_definable, hx⟩,
+  exact hf Γ this
+end
 
 lemma definable_const {Γ : Def S} {X : Type*} [definable_psh S X] {x : X} :
   definable S x → definable_psh.definable (λ (_ : Γ), x) :=
-sorry
+λ H, begin_lem.mp H Γ
 
 end o_minimal
 
@@ -177,7 +194,7 @@ do `(o_minimal.definable_psh.definable %%e) ← target,
 where p : Γ ⊢ α. Just apply `sect.definable`.
 -/
 meta def defin_var : tactic unit :=
-`[apply o_minimal.sect.definable]
+`[refine o_minimal.sect.definable _]
 
 end tactic.interactive
 
@@ -324,6 +341,31 @@ begin [defin]
     { exact definable_const definable_and },
     var },
   { var },
+end
+
+example : definable S and :=
+begin [defin]
+  intro p,
+  intro q,
+  exact struc.def_coords.inter p.definable q.definable
+end
+
+example {X Y Z : Type*} [definable_psh S X] [definable_psh S Y] [definable_psh S Z] : definable S (@function.curry X Y Z) :=
+begin
+  unfold function.curry,
+  begin [defin]
+    intro f,
+    intro x,
+    intro y,
+    app, { var },
+    exact ⟨x.definable, y.definable⟩
+    /-
+    app,
+    app,
+    exact definable_const definable_prod_mk,
+    var,
+    var, -/
+  end
 end
 
 #exit
