@@ -85,6 +85,11 @@ let trace : Π {α : Type} [has_to_tactic_format α] (a : α), tactic unit :=
   λ _ _ _, tactic.skip in       -- comment this for debugging
 do `(o_minimal.definable_sheaf.definable %%f) ← target,
    ([i_var], body) ← open_n_lambdas f 1,
+   -- `body` might not be a lambda yet, e.g., `function.curry`.
+   -- Reduce it to whnf in hopes of making it a lambda.
+   -- This won't do anything if it was a lambda already.
+   -- It might not always succeed, e.g., in the case of `and`.
+   body ← whnf body,
    ctx_var ← guess_ctx_ty,
    trace i_var,
    trace body,
@@ -155,40 +160,128 @@ end interactive
 
 end tactic
 
+meta def defin := tactic
+
+meta instance : monad defin :=
+show monad tactic, by apply_instance
+
+meta instance : interactive.executor defin :=
+{ config_type := unit,
+  inhabited := by apply_instance,
+  execute_with := λ _ tac, tactic.interactive.defin_start >> tac }
+
+namespace defin
+
+-- TODO:
+-- * tactic display not quite done (need `compact`)
+
+meta def step := @tactic.step
+meta def istep := @tactic.istep
+meta def solve1 : defin unit → defin unit := tactic.solve1
+
+-- Tactic state display borrows liberally from
+-- https://github.com/unitb/temporal-logic
+-- file temporal_logic.tactic
+
+/-- Replace any occurrences of `p.to_fun γ` with simply `p`.
+This is rather crude, but these aren't expected to appear
+outside the execution of a defin tactic. (More sophisticated
+would be to process only those variables which are sections
+over the context variable that appears in the goal.)
+The resulting expression is intended to be used for display purposes. -/
+meta def shorten (E : expr) : expr :=
+E.replace $ λ e _, match e with
+  | `(o_minimal.definable_sheaf.sect.to_fun %%p _) := some p
+  | _ := none
+end
+
+section display
+
+open tactic
+
+meta structure hyp_data : Type :=
+(crisp : bool)
+(var : expr)
+(ty : expr)
+(val : option expr)
+
+/-- Return information about a local hypothesis `l`. -/
+meta def get_hyp_data (l : expr) : defin hyp_data :=
+do ty ← infer_type l,
+   val ← try_core (shorten <$> local_def_value l),
+   match ty with
+   | `(o_minimal.definable_sheaf.sect %%Γ %%ty') := return ⟨ff, l, shorten ty', val⟩
+   | _ := return ⟨tt, l, shorten ty, val⟩
+   end
+
+meta def decl_to_fmt (s : tactic_state) (crisp : bool) (vs : list expr)
+  (ty : expr) (val : option expr) : format :=
+let vs' := format.join $ (vs.map s.format_expr).intersperse " ",
+    t := s.format_expr ty,
+    sep := if crisp then "::" else ":" in
+match val with
+| (some val) := format! "{vs'} {sep} {t} := {s.format_expr val}"
+| none := format! "{vs'} {sep} {t}"
+end
+
+meta def goal_to_fmt (g : expr) : defin (thunk format) :=
+do set_goals [g],
+   s ← read,
+   `(o_minimal.definable_sheaf.definable (λ (_ : ↥%%Γ), %%body)) ← target
+     | pure (λ _, to_fmt s),
+   lc ← local_context,
+   ctx_var ← tactic.o_minimal.guess_ctx_ty,
+   dat ← (lc.filter (λ l, l ≠ ctx_var)).mmap get_hyp_data,
+   return $ λ _, format.intercalate format.line
+     [format.intercalate ("," ++ format.line) $ dat.map $ λ d,
+        decl_to_fmt s d.crisp [d.var] d.ty d.val,
+      format! "⊢ {s.format_expr (shorten body)} def"]
+
+meta def save_info (p : pos) : defin unit :=
+do gs ← get_goals,
+   fmt ← gs.mmap goal_to_fmt,
+   set_goals gs,
+   tactic.save_info_thunk p (λ _,
+     let header := if fmt.length > 1 then format! "{fmt.length} goals\n" else "",
+         eval : thunk format → format := λ f, f () in
+     if fmt.empty
+       then "no goals"
+       else format.join ((fmt.map eval).intersperse (format.line ++ format.line)))
+
+end display
+
+namespace interactive
+
+meta def swap := tactic.interactive.swap
+meta def exact := tactic.interactive.exact
+meta def solve1 : defin unit → defin unit := tactic.interactive.solve1
+
+meta def intro := tactic.interactive.defin_intro
+meta def app := tactic.interactive.defin_app
+meta def var := tactic.interactive.defin_var
+
+/-- Display the actual, underlying tactic state. -/
+meta def trace_state : defin unit :=
+do s ← tactic.read,
+   tactic.trace s.to_format
+
+end interactive
+
+end defin
+
 namespace o_minimal
 
 variables {R : Type*} [S : struc R]
-variables {X Y : Type*} [definable_sheaf S X] [definable_sheaf S Y]
+variables {X Y Z : Type*} [definable_sheaf S X] [definable_sheaf S Y] [definable_sheaf S Z]
 
-example : definable S (λ (f : X → X) (x : X), f (f x)) :=
-begin
-  defin_start,
-  defin_intro f,
-  defin_intro x,
-  defin_app,
-  { defin_var },
-  { defin_app,
-    { defin_var },
-    { defin_var } }
-end
-
-lemma definable.prod_mk : definable S (@prod.mk X Y) :=
-begin
-  defin_start,
-  defin_intro x,
-  defin_intro y,
-  exact ⟨x.definable, y.definable⟩
-end
-
-example : definable S (λ (x : X), (x, x)) :=
-begin
-  defin_start,
-  defin_intro x,
-  defin_app,
-  defin_app,
-  apply definable.prod_mk.definable,
-  defin_var,
-  defin_var
+example : definable S (@function.curry X Y Z) :=
+begin [defin]
+  intro f,
+  intro x,
+  intro y,
+  app,
+  { var },
+  { exact ⟨x.definable, y.definable⟩ }
 end
 
 end o_minimal
