@@ -19,7 +19,7 @@ A type with coordinates valued in R is *definable* with respect to a given struc
 if the corresponding subset of Rⁿ is definable according to S.
 -/
 class is_definable (X : Type*) [has_coordinates R X] : Prop :=
-(definable [] : S.definable (coordinate_image R X))
+(is_definable [] : S.definable (coordinate_image R X))
 
 instance is_definable.self : is_definable S R :=
 begin
@@ -51,7 +51,7 @@ instance is_definable.prod : is_definable S (X × Y) :=
 begin
   constructor,
   rw coordinate_image_prod,
-  exact S.definable_external_prod (is_definable.definable S X) (is_definable.definable S Y)
+  exact S.definable_external_prod (is_definable.is_definable S X) (is_definable.is_definable S Y)
 end
 
 -- TODO: instances matching the rest of has_coordinates
@@ -69,7 +69,7 @@ variables {S}
 /-- The subtype of a definable type determined by a definable set is definable.
 Unfortunately, this can't be a global instance because of the hypothesis `hs`. -/
 def is_definable.subtype {s : set X} (hs : def_set S s) : is_definable S s :=
-{ definable := begin
+{ is_definable := begin
     unfold def_set at hs,
     convert hs,
     ext x,
@@ -85,7 +85,7 @@ begin
 end
 
 lemma def_set_univ : def_set S (set.univ : set X) :=
-by simpa [def_set] using is_definable.definable S X
+by simpa [def_set] using is_definable.is_definable S X
 
 variable {X}
 
@@ -202,7 +202,7 @@ begin
   unfold def_set,
   -- The preimage f ⁻¹' s, as a subset of the Rⁿ in which X lives,
   -- is the intersection of X with the preimage of s under the reindexing.
-  convert S.definable_inter (is_definable.definable S X) (S.definable_reindex fσ hs),
+  convert S.definable_inter (is_definable.is_definable S X) (S.definable_reindex fσ hs),
   ext z,
   suffices : (∃ (x : X), f x ∈ s ∧ coords R x = z) ↔
     z ∈ range (coords R) ∧ ∃ (y : Y), y ∈ s ∧ coords R y = z ∘ fσ,
@@ -225,7 +225,7 @@ begin
   -- The image of the diagonal of X in Rⁿ × Rⁿ
   -- is the diagonal of Rⁿ intersected with X × X.
   convert S.definable_inter
-    (S.definable_external_prod (is_definable.definable S X) (is_definable.definable S X))
+    (S.definable_external_prod (is_definable.is_definable S X) (is_definable.is_definable S X))
     S.definable_diag_rn,
   ext z,
   rw [mem_inter_iff, finvec.mem_prod_iff],
@@ -293,7 +293,7 @@ begin
   unfold def_fun,
   unfold def_set,
   convert S.definable_inter
-    (S.definable_prod_rn (is_definable.definable S X))
+    (S.definable_prod_rn (is_definable.is_definable S X))
     (S.definable_reindex_aux fσ (def_set_univ Y)),
   ext z,
   split,
