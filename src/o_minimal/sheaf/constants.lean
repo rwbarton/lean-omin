@@ -5,6 +5,8 @@ namespace o_minimal
 variables {R : Type*} {S : struc R}
 variables {X Y Z : Type*} [definable_sheaf S X] [definable_sheaf S Y] [definable_sheaf S Z]
 
+-- TODO: consistent naming
+
 lemma definable.const : definable S (@function.const X Y) :=
 begin [defin]
   intro x,
@@ -12,7 +14,7 @@ begin [defin]
   var
 end
 
-lemma definable.comp : definable S (@function.comp X Y Z) :=
+lemma definable_comp : definable S (@function.comp X Y Z) :=
 begin [defin]
   intro f,
   intro g,
@@ -20,6 +22,18 @@ begin [defin]
   app, var,
   app, var, var
 end
+
+lemma definable.app {f : X → Y} (hf : definable S f) {x : X} (hx : definable S x) :
+  definable S (f x) :=
+begin [defin]
+  app,
+  exact hf.definable _,
+  exact hx.definable _
+end
+
+lemma definable.comp {g : Y → Z} (hg : definable S g) {f : X → Y} (hf : definable S f) :
+  definable S (g ∘ f) :=
+(definable_comp.app hg).app hf
 
 lemma definable.prod_mk : definable S (@prod.mk X Y) :=
 begin [defin]
@@ -38,6 +52,24 @@ lemma definable.snd : definable S (prod.snd : X × Y → Y) :=
 begin [defin]
   intro p,
   exact p.definable.2
+end
+
+lemma definable.curry : definable S (@function.curry X Y Z) :=
+begin [defin]
+  intro f,
+  intro x,
+  intro y,
+  app, var,
+  app, app, exact definable.prod_mk.definable _, var, var
+end
+
+lemma definable.uncurry : definable S (@function.uncurry X Y Z) :=
+begin [defin]
+  intro f,
+  intro p,
+  app, app, var,
+  app, exact definable.fst.definable _, var,
+  app, exact definable.snd.definable _, var
 end
 
 instance punit.definable_sheaf : definable_sheaf S punit :=
@@ -152,6 +184,9 @@ instance subtype.definable_sheaf {s : set X} : definable_sheaf S s :=
   definable_precomp := λ L K φ f hf,
     definable_sheaf.definable_precomp φ (subtype.val ∘ f) hf }
 
+instance {p : X → Prop} : definable_sheaf S {x // p x} :=
+show definable_sheaf S (set_of p), by apply_instance
+
 -- instance prop.definable_sheaf {p : Prop} : definable_sheaf S p := sorry
 
 -- TODO: With an instance for Pi types, can we state the definable dependence on `s`?
@@ -161,6 +196,13 @@ begin [defin]
   exact v.definable
 end
 
+lemma definable_of_subtype_val {s : set Y} {f : X → s}
+  (hf : definable S (subtype.val ∘ f)) : definable S f :=
+begin
+  cases hf with hf,
+  exact ⟨λ K, hf K⟩
+end
+
 -- How to state definable subtype.mk?
 /-
 lemma definable.subtype.mk {s : set X} :
@@ -168,5 +210,9 @@ lemma definable.subtype.mk {s : set X} :
 begin
 end
 -/
+
+lemma definable_subtype.map {s : set X} {t : set Y} {f : X → Y} (hf : definable S f)
+  (h : ∀ x ∈ s, f x ∈ t) : definable S (subtype.map f h : s → t) :=
+definable_of_subtype_val $ hf.comp definable.subtype.val
 
 end o_minimal

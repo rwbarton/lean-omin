@@ -54,6 +54,8 @@ variables {R}
 lemma injective_coords (X : Type*) [cX : has_coordinates R X] : injective (@coords R X cX) :=
 cX.inj
 
+-- TODO: generalize to `finvec n X` where `[has_coordinates R X]`;
+-- but this will lose the definition as `id`.
 /-- Rⁿ tautologically has coordinates given by the identity. -/
 @[simps { fully_applied := ff }] instance has_coordinates.finvec (n : ℕ) : has_coordinates R (finvec n R) :=
 { ambdim := n,
