@@ -59,6 +59,9 @@ class definable_rep (W : Type*) [has_coordinates R W]
 
 instance self.definable_rep : definable_rep S R := { eq := λ K f, iff.rfl }
 
+instance Def.definable_rep {K : Def S} : definable_rep S K :=
+{ eq := λ _ f, iff.rfl }
+
 variables (W : Type*) [has_coordinates R W] [is_definable S W]
 
 def as_Def : Def S :=
@@ -152,5 +155,26 @@ definable_iff_uncurry.trans definable_iff_def_fun
 lemma definable_iff_def_rel₂ {s : Y → Y' → Prop} :
   definable S s ↔ def_set S {p : Y × Y' | s p.1 p.2} :=
 definable_iff_uncurry.trans definable_iff_def_set
+
+-- TODO: Does this hold more generally than for representable codomains?
+lemma definable_of_graph {f : X → Y} (df : definable S {p : X × Y | f p.1 = p.2}) :
+  definable S f :=
+begin
+  rw definable_fun,
+  intros K φ hφ,
+  rw ←definable_yoneda at hφ,
+  rw definable_rep.eq,
+  change def_set S ({p : X × Y | f p.1 = p.2} ∘ (λ (q : K × Y), (φ q.1, q.2))),
+  rw ←definable_iff_def_set,
+  refine df.comp _,
+  -- TODO: use more convenient lemmas
+  begin [defin]
+    intro q,
+    app, app, exact definable.prod_mk.definable _,
+    app, exact hφ.definable _,
+    app, exact definable.fst.definable _, var,
+    app, exact definable.snd.definable _, var
+  end
+end
 
 end o_minimal
