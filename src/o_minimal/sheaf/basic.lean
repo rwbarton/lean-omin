@@ -2,8 +2,6 @@ import o_minimal.Def
 
 /-
 Definable sheaves.
-NB: For now they are only definable presheaves,
-but a presheaf is just a sheaf for the trivial topology!
 
 Here we provide just enough definitions, instances and lemmas
 to set up the tactic environment. The eventual frontend for all this
@@ -21,14 +19,21 @@ class definable_sheaf (X : Type*) :=
 (definable : Π {K : Def S}, (K → X) → Prop)
 (definable_precomp : ∀ {L K : Def S} (φ : L ⟶ K) (f : K → X),
   definable f → definable (f ∘ φ))
+(definable_cover : ∀ {K : Def S} (f : K → X) (𝓛 : Def.cover K),
+  (∀ i, definable (f ∘ 𝓛.map i)) → definable f)
 
 namespace definable_sheaf
 
 variables {S}
 
-instance Def.definable_sheaf {X : Def S} : definable_sheaf S X :=
+def rep {W : Type*} [has_coordinates R W] [is_definable S W] :
+  definable_sheaf S W :=
 { definable := λ K f, def_fun S f,
-  definable_precomp := λ L K φ f h, h.comp φ.is_definable }
+  definable_precomp := λ L K φ f hf, hf.comp φ.is_definable,
+  definable_cover := λ K f 𝓛 h, Def.subcanonical 𝓛 f h }
+
+instance Def.definable_sheaf {X : Def S} : definable_sheaf S X :=
+definable_sheaf.rep
 
 variables {X Y : Type*} [definable_sheaf S X] [definable_sheaf S Y]
 
@@ -38,7 +43,10 @@ instance prod.definable_sheaf : definable_sheaf S (X × Y) :=
     definable_sheaf.definable (prod.snd ∘ f),
   definable_precomp := λ L K φ _ h,
     ⟨definable_sheaf.definable_precomp φ _ h.1,
-     definable_sheaf.definable_precomp φ _ h.2⟩ }
+     definable_sheaf.definable_precomp φ _ h.2⟩,
+  definable_cover := λ K f 𝓛 h,
+    ⟨definable_sheaf.definable_cover _ 𝓛 (λ i, (h i).1),
+     definable_sheaf.definable_cover _ 𝓛 (λ i, (h i).2)⟩ }
 
 instance fun.definable_sheaf : definable_sheaf S (X → Y) :=
 { definable := λ K f,
@@ -46,7 +54,21 @@ instance fun.definable_sheaf : definable_sheaf S (X → Y) :=
       definable_sheaf.definable (function.uncurry f ∘ g),
   definable_precomp := λ L K φ f hf M g hg,
     hf M (λ m, (φ (g m).1, (g m).2))
-      ⟨definable_sheaf.definable_precomp ⟨λ m, (g m).1, hg.1⟩ φ φ.is_definable, hg.2⟩ }
+      ⟨definable_sheaf.definable_precomp ⟨λ m, (g m).1, hg.1⟩ φ φ.is_definable, hg.2⟩,
+  definable_cover := λ K f 𝓛 h K' g hg, begin
+    let g₁ : K' ⟶ K := ⟨λ k', (g k').1, hg.1⟩,
+    let 𝓛' := 𝓛.pullback g₁,
+    apply definable_sheaf.definable_cover _ 𝓛',
+    intro i,
+    specialize h i (𝓛'.obj i)
+      (λ l', (Def.pullback.π₂ g₁ _ l', (g (𝓛'.map i l')).2))
+      ⟨(Def.pullback.π₂ g₁ _).is_definable, definable_sheaf.definable_precomp _ _ hg.2⟩,
+    dsimp only [function.uncurry, function.comp] at ⊢ h,
+    convert h,
+    ext x,
+    congr,
+    exact x.property.snd.snd,
+  end }
 
 /-- Intended to be an implementation detail of the tactic mode.
 In "user code", use `definable` instead. -/

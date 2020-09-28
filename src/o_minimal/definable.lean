@@ -371,6 +371,12 @@ lemma def_fun_subtype_val {s : set X} {hs : def_set S s} :
 by haveI := is_definable.subtype hs; exact
 (is_reindexing.subtype.val R).def_fun
 
+lemma def_fun.finvec.left {n m : ℕ} : def_fun S (λ x : finvec (n+m) R, x.left) :=
+(is_reindexing.finvec.left R).def_fun
+
+lemma def_fun.finvec.right {n m : ℕ} : def_fun S (λ x : finvec (n+m) R, x.right) :=
+(is_reindexing.finvec.right R).def_fun
+
 lemma def_fun.finvec.init {n : ℕ} : def_fun S (λ x : finvec (n+1) R, x.init) :=
 (is_reindexing.finvec.init R).def_fun
 

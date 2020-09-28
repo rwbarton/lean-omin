@@ -41,11 +41,6 @@ definable_yoneda
 lemma Def.definable_iff_def_set {s : set K} : definable S s ↔ def_set S s :=
 definable_yoneda
 
-def definable_sheaf.rep {W : Type*} [has_coordinates R W] [is_definable S W] :
-  definable_sheaf S W :=
-{ definable := λ K f, def_fun S f,
-  definable_precomp := λ L K φ f hf, hf.comp φ.is_definable }
-
 instance self.definable_sheaf : definable_sheaf S R :=
 definable_sheaf.rep
 

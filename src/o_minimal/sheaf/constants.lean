@@ -74,7 +74,8 @@ end
 
 instance punit.definable_sheaf : definable_sheaf S punit :=
 { definable := λ K f, true,
-  definable_precomp := λ L K φ f hf, trivial }
+  definable_precomp := λ L K φ f hf, trivial,
+  definable_cover := λ K f 𝓛 h, trivial }
 
 lemma definable.star : definable S punit.star :=
 begin [defin]
@@ -83,7 +84,8 @@ end
 
 instance Prop.definable_sheaf : definable_sheaf S Prop :=
 { definable := λ K f, def_set S f,
-  definable_precomp := λ L K φ f hf, φ.is_definable.preimage hf }
+  definable_precomp := λ L K φ f hf, φ.is_definable.preimage hf,
+  definable_cover := λ K f 𝓛 h, Def.set_subcanonical 𝓛 f h }
 
 lemma definable.and : definable S and :=
 begin [defin]
@@ -182,7 +184,9 @@ end
 instance subtype.definable_sheaf {s : set X} : definable_sheaf S s :=
 { definable := λ K f, definable_sheaf.definable (subtype.val ∘ f),
   definable_precomp := λ L K φ f hf,
-    definable_sheaf.definable_precomp φ (subtype.val ∘ f) hf }
+    definable_sheaf.definable_precomp φ (subtype.val ∘ f) hf,
+  definable_cover := λ K f 𝓛 hf,
+    definable_sheaf.definable_cover (subtype.val ∘ f) 𝓛 hf }
 
 instance {p : X → Prop} : definable_sheaf S {x // p x} :=
 show definable_sheaf S (set_of p), by apply_instance

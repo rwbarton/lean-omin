@@ -210,6 +210,14 @@ lemma is_reindexing.subtype.val {X : Type*} [cX : has_coordinates R X] {s : set 
   is_reindexing R (subtype.val : s → X) :=
 ⟨id, λ x j, rfl⟩
 
+lemma is_reindexing.finvec.left {n m : ℕ} :
+  is_reindexing R (finvec.left : (finvec (n+m) R) → (finvec n R)) :=
+⟨fin.cast_add m, λ x j, rfl⟩
+
+lemma is_reindexing.finvec.right {n m : ℕ} :
+  is_reindexing R (finvec.right : (finvec (n+m) R) → (finvec m R)) :=
+⟨fin.nat_add n, λ x j, rfl⟩
+
 lemma is_reindexing.finvec.init {n : ℕ} :
   is_reindexing R (finvec.init : (finvec (n+1) R) → (finvec n R)) :=
 ⟨fin.cast_succ, λ x j, rfl⟩
