@@ -148,6 +148,14 @@ begin [defin]
   app, app, exact definable.mem.definable _, var, var
 end
 
+lemma definable.compl : definable S (set.compl : set X → set X) :=
+begin [defin]
+  intro s,
+  intro x,
+  app, exact definable.not.definable _,
+  app, app, exact definable.mem.definable _, var, var
+end
+
 lemma definable.diff : definable S ((\) : set X → set X → set X) :=
 begin [defin]
   intro s,

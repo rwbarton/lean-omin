@@ -172,4 +172,8 @@ begin
   end
 end
 
+def subtype.definable_rep {s : set Y} (ds : definable S s) : definable_rep S s :=
+{ eq := λ K f, (definable_rep.eq K (subtype.val ∘ f)).trans def_fun_subtype_iff.symm,
+  .. is_definable.subtype (definable_iff_def_set.mp ds) }
+
 end o_minimal

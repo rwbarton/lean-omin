@@ -411,6 +411,12 @@ lemma def_fun_subtype_mk {s : set X} {hs : def_set S s}
 by haveI := is_definable.subtype hs; exact
 def_fun.cancel def_fun_subtype_val subtype.val_injective df
 
+lemma def_fun_subtype_iff {s : set X} {ds : def_set S s} {f : Y → s} :
+  by haveI := is_definable.subtype ds; exact
+  def_fun S f ↔ def_fun S (subtype.val ∘ f) :=
+by haveI := is_definable.subtype ds; exact
+⟨λ h, def_fun_subtype_val.comp h, λ h, def_fun_subtype_val.cancel subtype.val_injective h⟩
+
 lemma def_fun.image {f : X → Y} (hf : def_fun S f) {s : set X} (hs : def_set S s) :
   def_set S (f '' s) :=
 show def_set S {y | ∃ x, x ∈ s ∧ f x = y}, from
