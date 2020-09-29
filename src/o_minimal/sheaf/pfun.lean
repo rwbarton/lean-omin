@@ -99,4 +99,23 @@ begin
     exact definable.snd.comp (hφ.comp definable.subtype.val) }
 end
 
+lemma definable_roption_map :
+  definable S (roption.map : (X → Y) → roption X → roption Y) :=
+begin
+  rw definable_iff_uncurry,
+  rw definable_fun,
+  intros K φ hφ,
+  refine ⟨hφ.2.fst, _⟩,
+  change definable S (λ (p : {k | (φ k).2.dom}), (φ p.1).1 (pfun.as_subtype (prod.snd ∘ φ) p)),
+  begin [defin]
+    intro p,
+    app,
+    app, exact definable.fst.definable _,
+    app, exact (definable_yoneda.mpr hφ).definable _,
+    app, exact definable.subtype.val.definable _,
+    var,
+    app, exact hφ.2.snd.definable _, var
+  end
+end
+
 end o_minimal
