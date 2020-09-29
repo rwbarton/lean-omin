@@ -1,5 +1,7 @@
 import algebra.module.ordered
 import order.conditionally_complete_lattice
+import o_minimal.sheaf.pfun
+import o_minimal.sheaf.quantifiers
 import ..oqm
 -- import ..tame
 
@@ -20,25 +22,8 @@ iff.rfl
 
 end
 
-section
-
-open_locale classical
-
-noncomputable def roption.orelse_pure {α : Type*} (a : roption α) (b : α) : α :=
-if h : a.dom then a.get h else b
-
-lemma roption.orelse_pure_eq_iff {α : Type*} {a : roption α} {b : α} (x : α) :
-  a.orelse_pure b = x ↔ (x ∈ a ∨ (¬ ∃ y, y ∈ a) ∧ b = x) :=
-begin
-  unfold roption.orelse_pure,
-  split_ifs; split; simp [h, roption.mem_eq]
-end
-
-end
-
 local infixr ` <|| `:2 := roption.orelse_pure
 local notation x ` >>* `:55 f:55 := f <$> x
---local infixr ` >>* `:55 := roption.my_fmap
 
 open o_minimal
 
@@ -60,7 +45,7 @@ variables {R : Type u} [OQM R]
 local notation `½` := (1/2 : ℚ)
 
 variables {S : struc R} [o_minimal_add S]
-variables {Y : Type u} [has_coordinates R Y] [is_definable S Y]
+variables {Y : Type u} [has_coordinates R Y] [definable_rep S Y]
 
 /-
 lemma def_fun.rat_smul (q : ℚ) : def_fun S (λ (r : R), q • r) :=
@@ -104,22 +89,10 @@ axiom definable_choice_1 {s : set (Y × R)} (hs : def_set S s) (h : prod.fst '' 
 
 variables (S)
 
--- This is a structure just to avoid Lean instance cache nonsense
-structure def_pfun_set (f : set R →. Y) : Prop :=
-(def_graph : ∀ ⦃K : Type u⦄ [has_coordinates R K] [is_definable S K],
-  -- f is definable after composition with any definable K → set R ≅ set (K × R) is
-  -- resulting K →. R is definable if its graph is a definable subset of K × R
-  ∀ s : set (K × R), def_set S s → def_set S {p : K × Y | p.2 ∈ f {r | (p.1, r) ∈ s}})
-
 -- Goal: Prove the following type is inhabited.
 def definable_choice_function : Type u :=
 {choice : set R →. R //
- def_pfun_set S choice ∧ choice.dom = set.nonempty ∧ ∀ X H, tame X → (choice X).get H ∈ X}
-
--- going to run out of names for these quickly
-structure def_rel_set (rel : set R → Y → Prop) : Prop :=
-(def_graph : ∀ ⦃K : Type u⦄ [has_coordinates R K] [is_definable S K],
-  ∀ s : set (K × R), def_set S s → def_set S {p : K × Y | rel {r | (p.1, r) ∈ s} p.2})
+ definable S choice ∧ choice.dom = set.nonempty ∧ ∀ X H, tame X → (choice X).get H ∈ X}
 
 variables {S}
 
@@ -146,12 +119,12 @@ lemma get_pfun_of_rel_eq_of_rel {rel : set R → R → Prop} {uni}
 uni X _ _ (classical.some_spec _) h
 
 lemma def_pfun_of_rel {rel : set R → R → Prop} {uni}
-  (drel : def_rel_set S rel) : def_pfun_set S (pfun_of_rel rel uni) :=
+  (drel : definable S rel) : definable S (pfun_of_rel rel uni) :=
 begin
-  constructor,
-  introsI K _ _ s ds,
-  convert drel.def_graph s ds,
-  ext ⟨k, r⟩,
+  apply definable_pfun_of_graph,
+  rw definable_iff_uncurry at drel,
+  convert drel,
+  ext ⟨x, y⟩,
   apply mem_pfun_of_rel_iff uni
 end
 
@@ -160,23 +133,20 @@ pfun_of_rel is_least (λ _ _ _, is_least.unique)
 
 @[simp] lemma the_least_dom {X : set R} : (the_least X).dom = ∃ e, is_least X e := rfl
 
-lemma def_is_least : def_rel_set S (is_least : set R → R → Prop) :=
-begin
-  constructor,
-  introsI K _ _ s ds,
-  dunfold is_least lower_bounds,
-  -- now probably automatable
-  apply def_set.and,
-  { refine def_fun.preimage _ ds,
-    exact def_fun.prod' def_fun.fst def_fun.snd },
-  { apply def_set.forall,
-    apply def_set.imp,
-    { refine def_fun.preimage _ ds,
-      exact (def_fun.fst.comp def_fun.fst).prod' def_fun.snd },
-    { exact definable_le (def_fun.snd.comp def_fun.fst) def_fun.snd } }
+lemma def_is_least : definable S (is_least : set R → R → Prop) :=
+show definable S (λ X (r : R), r ∈ X ∧ ∀ x ∈ X, r ≤ x),
+begin [defin]
+  intro X,
+  intro r,
+  app, app, exact definable.and.definable _,
+  app, app, exact definable.mem.definable _, var, var,
+  all x,
+  imp,
+  app, app, exact definable.mem.definable _, var, var,
+  app, app, exact (definable_iff_def_rel₂.mpr definable_le').definable _, var, var
 end
 
-lemma def_the_least : def_pfun_set S (the_least : set R →. R) :=
+lemma def_the_least : definable S (the_least : set R →. R) :=
 def_pfun_of_rel def_is_least
 
 -- Now repeat for inf, sup.
@@ -190,116 +160,66 @@ pfun_of_rel is_lub (λ _ _ _, is_lub.unique)
 @[simp] lemma the_inf_dom {X : set R} : (the_inf X).dom = ∃ a, is_glb X a := rfl
 @[simp] lemma the_sup_dom {X : set R} : (the_sup X).dom = ∃ b, is_lub X b := rfl
 
-lemma def_the_inf : def_pfun_set S (the_inf : set R →. R) :=
+lemma def_the_inf : definable S (the_inf : set R →. R) :=
 begin
   refine def_pfun_of_rel _,
-  constructor, introsI K _ _ s ds,
-  simp_rw is_glb_def,
-  apply def_set.and,
-  { apply def_set.forall,
-    apply def_set.imp,
-    { refine def_fun.preimage _ ds,
-      exact def_fun.prod' (def_fun.fst.comp def_fun.fst) def_fun.snd },
-    { exact definable_le (def_fun.snd.comp def_fun.fst) def_fun.snd } },
-  { apply def_set.forall,
-    apply def_set.imp,
-    { apply def_set.forall,
-      apply def_set.imp,
-      { refine def_fun.preimage _ ds,
-        exact def_fun.prod' (def_fun.fst.comp (def_fun.fst.comp def_fun.fst)) def_fun.snd },
-      { exact definable_le (def_fun.snd.comp def_fun.fst) def_fun.snd } },
-    { exact definable_le def_fun.snd (def_fun.snd.comp def_fun.fst) } }
+  begin [defin]
+    intro X,
+    intro r,
+    app, app, exact definable.and.definable _,
+    { all x,
+      imp,
+      app, app, exact definable.mem.definable _, var, var,
+      app, app, exact (definable_iff_def_rel₂.mpr definable_le').definable _, var, var },
+    { all y,
+      imp,
+      { all x,
+        imp,
+        app, app, exact definable.mem.definable _, var, var,
+        app, app, exact (definable_iff_def_rel₂.mpr definable_le').definable _, var, var },
+      { app, app, exact (definable_iff_def_rel₂.mpr definable_le').definable _, var, var } }
+  end
 end
 
--- We don't actually use this yet (because we don't know how to)
--- lemma def_the_sup : def_pfun_set S (the_sup : set R →. R) := sorry
-
--- context
-variables {Γ : Type*} [has_coordinates R Γ] [is_definable S Γ]
-
-section
-variables (S)
-structure def_pfun_set_ctx (f : Γ → set R →. Y) : Prop :=
-(def_graph : ∀ ⦃K : Type u⦄ [has_coordinates R K] [is_definable S K],
-  ∀ s : set (K × R), def_set S s → def_set S {p : (Γ × K) × Y | p.2 ∈ f p.1.1 {r | (p.1.2, r) ∈ s}})
-
-structure def_fun_set_ctx (f : Γ → set R → Y) : Prop :=
-(def_graph : ∀ ⦃K : Type u⦄ [has_coordinates R K] [is_definable S K],
-  ∀ s : set (K × R), def_set S s → def_set S {p : (Γ × K) × Y | f p.1.1 {r | (p.1.2, r) ∈ s} = p.2})
-
-end
-
--- Definability of compound actions.
--- In the course of building these up, we also accumulate a context Γ.
-
-lemma def_pfun_set_ctx.orelse_pure {f : Γ → set R →. R} {g : Γ → set R → R}
-  (df : def_pfun_set_ctx S f) (dg : def_fun_set_ctx S g) :
-  def_fun_set_ctx S (λ γ X, f γ X <|| g γ X) :=
+lemma def_the_sup : definable S (the_sup : set R →. R) :=
 begin
-  constructor, introsI K _ _ s ds,
-  replace df := df.1 s ds,
-  replace dg := dg.1 s ds,
-  simp_rw roption.orelse_pure_eq_iff,
-  refine df.or (def_set.and _ dg),
-  refine def_set.not (def_set.exists _),
-  let φ : ((Γ × K) × R) × R → (Γ × K) × R := λ p, (p.1.1, p.2),
-  have dφ : def_fun S φ := (def_fun.fst.comp def_fun.fst).prod' def_fun.snd,
-  exact dφ.preimage df,
+  refine def_pfun_of_rel _,
+  begin [defin]
+    intro X,
+    intro r,
+    app, app, exact definable.and.definable _,
+    { all x,
+      imp,
+      app, app, exact definable.mem.definable _, var, var,
+      app, app, exact (definable_iff_def_rel₂.mpr definable_le').definable _, var, var },
+    { all y,
+      imp,
+      { all x,
+        imp,
+        app, app, exact definable.mem.definable _, var, var,
+        app, app, exact (definable_iff_def_rel₂.mpr definable_le').definable _, var, var },
+      { app, app, exact (definable_iff_def_rel₂.mpr definable_le').definable _, var, var } }
+  end
 end
 
--- In `g`, the context has been extended by the result of `f`.
-
-lemma def_pfun_set_ctx.bind {f : Γ → set R →. Y} {g : Γ → set R → Y → R}
-  (df : def_pfun_set_ctx S f) (dg : def_fun_set_ctx S (λ (p : Γ × Y) X, g p.1 X p.2)) :
-  def_pfun_set_ctx S (λ γ X, f γ X >>* g γ X) :=
-begin
-  constructor, introsI K _ _ s ds,
-  replace df := df.1 s ds,
-  replace dg := dg.1 s ds,
-  simp only [exists_prop, roption.mem_map_iff, roption.map_eq_map],
-  apply def_set.exists,
-  apply def_set.and,
-  { let φ : ((Γ × K) × R) × Y → (Γ × K) × Y := λ p, ((p.1.1.1, p.1.1.2), p.2),
-    have dφ : def_fun S φ,
-    { apply def_fun.prod',
-      { apply def_fun.prod',
-        { apply def_fun.fst.comp,
-          apply def_fun.fst.comp,
-          apply def_fun.fst },
-        { apply def_fun.snd.comp,
-          apply def_fun.fst.comp,
-          apply def_fun.fst } },
-      { exact def_fun.snd } },
-    exact dφ.preimage df },
-  { let φ : ((Γ × K) × R) × Y → ((Γ × Y) × K) × R := λ p, (((p.1.1.1, p.2), p.1.1.2), p.1.2),
-    have dφ : def_fun S φ,
-    { refine def_fun.prod' _ (def_fun.snd.comp def_fun.fst),
-      refine def_fun.prod' _ (def_fun.snd.comp (def_fun.fst.comp def_fun.fst)),
-      refine def_fun.prod' _ def_fun.snd,
-      exact def_fun.fst.comp (def_fun.fst.comp def_fun.fst) },
-    exact dφ.preimage dg }
+lemma definable_Ioo : definable S (set.Ioo : R → R → set R) :=
+begin [defin]
+  intro a,
+  intro b,
+  intro x,
+  app, app, exact definable.and.definable _,
+  { app, app, exact (definable_iff_def_rel₂.mpr definable_lt').definable _,
+    var, var },
+  { app, app, exact (definable_iff_def_rel₂.mpr definable_lt').definable _,
+    var, var }
 end
 
--- Convert between versions with & without a context
-
-lemma def_pfun_set.of_empty_ctx {f : set R →. Y} (df : def_pfun_set_ctx S (λ (p : punit) X, f X)) :
-  def_pfun_set S f :=
-begin
-  constructor, introsI K _ _ s ds,
-  have := df.1 s ds,
-  let φ : K × Y → (punit × K) × Y := λ p, ((⟨⟩, p.1), p.2),
-  have dφ : def_fun S φ := (def_fun_const.prod' def_fun.fst).prod' def_fun.snd,
-  exact dφ.preimage this
-end
-
-lemma def_fun_set.of_empty_ctx {f : set R →. Y} (df : def_pfun_set S f) :
-  def_pfun_set_ctx S (λ (γ : Γ) X, f X) :=
-begin
-  constructor, introsI K _ _ s ds,
-  have := df.1 s ds,
-  let φ : (Γ × K) × Y → K × Y := λ p, (p.1.2, p.2),
-  have dφ : def_fun S φ := (def_fun.snd.comp def_fun.fst).prod' def_fun.snd,
-  exact dφ.preimage this
+lemma definable_Iio : definable S (set.Iio : R → set R) :=
+begin [defin]
+  intro b,
+  intro x,
+  app, app, exact (definable_iff_def_rel₂.mpr definable_lt').definable _,
+  var, var
 end
 
 -- TODO: "generalize" core library's `guard` to return `punit`?
@@ -323,167 +243,75 @@ the_least X <||
 lemma dom_chosen_one : (chosen_one : set R →. R).dom = set.nonempty :=
 rfl
 
---set_option pp.all true
-lemma def_chosen_one : def_pfun_set S (chosen_one : set R →. R) :=
+lemma def_zero_when_nonempty : definable S (zero_when_nonempty : set R →. R) :=
 begin
-  apply def_pfun_set.of_empty_ctx,
-  apply def_pfun_set_ctx.bind,
-  { -- TODO: factor out this proof
-    constructor,
-    introsI K _ _ s ds,
-    change def_set S {p | ∃ (H : ∃ _, _), (0 : R) = _},
-    simp_rw exists_prop,
-    apply def_set.and,
-    { apply def_set.exists,
-      refine def_fun.preimage _ ds,
-      apply def_fun.prod',
-      { apply def_fun.snd.comp,
-        apply def_fun.fst.comp,
-        exact def_fun.fst },
-      { exact def_fun.snd } },
-    { apply def_set_eq,
-      { exact def_fun_const },
-      { exact def_fun.snd } } },
-  -- Now for the fun part
-  apply def_pfun_set_ctx.orelse_pure,
-  { apply def_fun_set.of_empty_ctx,
-    apply def_the_least },
-  apply def_pfun_set_ctx.orelse_pure,
-  { apply def_pfun_set_ctx.bind,
-    { apply def_fun_set.of_empty_ctx,
-      apply def_the_inf },
-    apply def_pfun_set_ctx.orelse_pure,
-    { apply def_pfun_set_ctx.bind,
-      { -- have := @def_the_sup R _ S _,
-        -- now what? we need to know {b : R | γ.snd < b ∧ set.Ioo γ.snd b ⊆ X}
-        -- depends definably on `γ.snd : R` and `X : set R`
-        -- Definability of `Γ → set R → set R`?
-        -- For now: let's just brute force it in a non-compositional way.
-        constructor, introsI K _ _ s ds,
-        simp only [the_sup, mem_pfun_of_rel_iff (@is_lub.unique R _), is_lub_def],
-        apply def_set.and,
-        { apply def_set.forall,
-          apply def_set.imp,
-          { apply def_set.and,
-            { refine definable_lt _ def_fun.snd,
-              apply def_fun.snd.comp,
-              apply def_fun.fst.comp,
-              apply def_fun.fst.comp,
-              apply def_fun.fst },
-            { apply def_set.forall,
-              apply def_set.imp,
-              { apply def_set.and,
-                { refine definable_lt _ def_fun.snd,
-                  apply def_fun.snd.comp,
-                  apply def_fun.fst.comp,
-                  apply def_fun.fst.comp,
-                  apply def_fun.fst.comp,
-                  apply def_fun.fst },
-                { refine definable_lt def_fun.snd _,
-                  apply def_fun.snd.comp,
-                  apply def_fun.fst } },
-              { refine def_fun.preimage _ ds,
-                apply def_fun.prod',
-                { apply def_fun.snd.comp,
-                  apply def_fun.fst.comp,
-                  apply def_fun.fst.comp,
-                  apply def_fun.fst },
-                { exact def_fun.snd } } } },
-          { apply definable_le,
-            { apply def_fun.snd },
-            { apply def_fun.snd.comp,
-              apply def_fun.fst } } },
-        { apply def_set.forall,
-          apply def_set.imp,
-          { apply def_set.forall,
-            apply def_set.imp,
-            { apply def_set.and,
-              { refine definable_lt _ def_fun.snd,
-                apply def_fun.snd.comp,
-                apply def_fun.fst.comp,
-                apply def_fun.fst.comp,
-                apply def_fun.fst.comp,
-                apply def_fun.fst },
-              { apply def_set.forall,
-                apply def_set.imp,
-                { apply def_set.and,
-                  { refine definable_lt _ def_fun.snd,
-                    { apply def_fun.snd.comp,
-                      apply def_fun.fst.comp,
-                      apply def_fun.fst.comp,
-                      apply def_fun.fst.comp,
-                      apply def_fun.fst.comp,
-                      apply def_fun.fst } },
-                  { refine definable_lt def_fun.snd _,
-                    { apply def_fun.snd.comp,
-                      apply def_fun.fst } } },
-                { refine def_fun.preimage _ ds,
-                  apply def_fun.prod',
-                  { apply def_fun.snd.comp,
-                    apply def_fun.fst.comp,
-                    apply def_fun.fst.comp,
-                    apply def_fun.fst.comp,
-                    apply def_fun.fst },
-                  { exact def_fun.snd } } } },
-            { refine definable_le def_fun.snd _,
-              exact def_fun.snd.comp def_fun.fst } },
-          { refine definable_le _ def_fun.snd,
-            exact def_fun.snd.comp def_fun.fst } } },
-      { constructor, introsI K _ _ s ds,
-        refine def_set_eq _ def_fun.snd,
-        { refine def_fun.half.comp _,
-          apply definable.add,
-          { apply def_fun.snd.comp,
-            apply def_fun.fst.comp,
-            apply def_fun.fst.comp,
-            apply def_fun.fst },
-          { apply def_fun.snd.comp,
-            apply def_fun.fst.comp,
-            apply def_fun.fst } } } },
-    { constructor, introsI K _ _ s ds,
-      apply def_set_eq,
-      { apply definable.add,
-        { apply def_fun.snd.comp,
-          apply def_fun.fst.comp,
-          apply def_fun.fst },
-        { apply def_fun_const } },
-      { exact def_fun.snd } } },
-  apply def_pfun_set_ctx.orelse_pure,
-  { apply def_pfun_set_ctx.bind,
-    -- like before, but simpler
-    { constructor, introsI K _ _ s ds,
-      simp only [the_sup, mem_pfun_of_rel_iff (@is_lub.unique R _), is_lub_def],
-      apply def_set.and,
-      { apply def_set.forall,
-        apply def_set.imp,
-        { apply def_set.forall,
-          apply def_set.imp,
-          { exact definable_lt def_fun.snd (def_fun.snd.comp def_fun.fst) },
-          { refine def_fun.preimage _ ds,
-            refine def_fun.prod' _ def_fun.snd,
-            exact def_fun.snd.comp (def_fun.fst.comp (def_fun.fst.comp def_fun.fst)) } },
-        { exact definable_le def_fun.snd (def_fun.snd.comp def_fun.fst) } },
-      { apply def_set.forall,
-        apply def_set.imp,
-        { apply def_set.forall,
-          apply def_set.imp,
-          { apply def_set.forall,
-            apply def_set.imp,
-            { exact definable_lt def_fun.snd (def_fun.snd.comp def_fun.fst) },
-            { refine def_fun.preimage _ ds,
-              refine def_fun.prod' _ def_fun.snd,
-              exact def_fun.snd.comp (def_fun.fst.comp (def_fun.fst.comp (def_fun.fst.comp def_fun.fst))) } },
-          { exact definable_le def_fun.snd (def_fun.snd.comp def_fun.fst) } },
-        { exact definable_le (def_fun.snd.comp def_fun.fst) def_fun.snd } } },
-    { constructor, introsI K _ _ s ds,
-      -- TODO: definable.sub
-      simp only [sub_eq_add_neg],
-      exact def_set_eq (definable.add (def_fun.snd.comp (def_fun.fst.comp def_fun.fst)) def_fun_const) def_fun.snd } },
-  { constructor, introsI K _ _ s ds,
-    exact def_set_eq def_fun_const def_fun.snd }
+  apply definable_pfun_of_graph,
+  change definable S {p : set R × R | ∃ (H : p.1.nonempty), 0 = p.2},
+  simp_rw exists_prop,
+  have z : definable S (λ (r : R), 0 = r) :=
+    definable_iff_def_set.mpr (def_set_eq def_fun_const def_fun.id),
+  begin [defin]
+    intro p,
+    app, app, exact definable.and.definable _,
+    { app, exact definable_nonempty.definable _,
+      app, exact definable.fst.definable _, var },
+    { app, exact z.definable _,
+      app, exact definable.snd.definable _, var }
+  end
 end
 
--- STILL TO DO:
+lemma def_chosen_one : definable S (chosen_one : set R →. R) :=
+begin
+  unfold chosen_one,
+  simp only [sub_eq_add_neg],
+  begin [defin]
+    intro X,
+    app, app, exact definable_roption_map.definable _, swap,
+    app, exact def_zero_when_nonempty.definable _, var,
+    intro r,
+    app, app, exact definable_orelse_pure.definable _,
+    { app, exact def_the_least.definable _, var },
+    app, app, exact definable_orelse_pure.definable _,
+    { app, app, exact definable_roption_map.definable _, swap,
+      { app, exact def_the_inf.definable _, var },
+      intro a,
+      app, app, exact definable_orelse_pure.definable _,
+      { app, app, exact definable_roption_map.definable _, swap,
+        app, exact def_the_sup.definable _,
+        { intro b,
+          app, app, exact definable.and.definable _,
+          -- TODO: sheafy order classes
+          app, app, exact (definable_iff_def_rel₂.mpr definable_lt').definable _,
+          var, var,
+          app, app, exact definable_subset.definable _,
+          app, app, exact definable_Ioo.definable _, var, var,
+          var },
+        { intro b,
+          app,
+          exact (definable_iff_def_fun.mpr def_fun.half).definable _,
+          -- TODO: sheafy algebra classes
+          app, app, exact (definable_iff_def_fun₂.mpr definable_add).definable _,
+          var, var } },
+      { app, app, exact (definable_iff_def_fun₂.mpr definable_add).definable _,
+        var,
+        -- TODO: this is abstraction-breaking
+        exact def_fun_const } },
+    app, app, exact definable_orelse_pure.definable _,
+    { app, app, exact definable_roption_map.definable _, swap,
+      app, exact def_the_sup.definable _,
+      { intro b,
+        app, app, exact definable_subset.definable _,
+        app, exact definable_Iio.definable _, var,
+        var },
+      { intro b,
+        app, app, exact (definable_iff_def_fun₂.mpr definable_add).definable _,
+        var,
+        exact def_fun_const } },
+    exact def_fun_const
+  end
+end
+
+-- STILL TO DO (done in other files):
 -- * Prove that, when `X` is tame and nonempty, `chosen_one X` is an element of `X`.
 -- Hopefully it's not too hard to reason about what `chosen_one` will produce;
 -- but it still requires understanding the local behavior of tame sets.
