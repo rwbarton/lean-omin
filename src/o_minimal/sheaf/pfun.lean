@@ -8,6 +8,7 @@ open_locale classical
 noncomputable def roption.orelse_pure {α : Type*} (x : roption α) (y : α) :=
 if h : x.dom then x.get h else y
 
+-- TODO: Is this actually useful?
 lemma roption.orelse_pure_eq_iff {α : Type*} {x : roption α} {y : α} (z : α) :
   x.orelse_pure y = z ↔ (z ∈ x ∨ ¬ x.dom ∧ z = y) :=
 begin
@@ -52,9 +53,6 @@ instance roption.definable_sheaf : definable_sheaf S (roption X) :=
     apply definable_of_subtype_val,
     exact definable.snd.comp definable.subtype.val
   end }
-
-instance pfun.definable_sheaf : definable_sheaf S (X →. Y) :=
-show definable_sheaf S (X → roption Y), by apply_instance
 
 -- TODO: definable (∈)? but it needs a separatedness hypothesis on X
 /-lemma definable_roption.mem : definable S ((∈) : X → roption X → Prop) :=
@@ -116,6 +114,54 @@ begin
     var,
     app, exact hφ.2.snd.definable _, var
   end
+end
+
+instance pfun.definable_sheaf : definable_sheaf S (X →. Y) :=
+show definable_sheaf S (X → roption Y), by apply_instance
+
+lemma definable_pfun_of_graph {Z : Type*} [has_coordinates R Z] [definable_rep S Z]
+  {f : X →. Z} (df : definable S {p : X × Z | p.2 ∈ f p.1}) : definable S f :=
+begin
+  rw definable_fun,
+  intros K φ hφ,
+  rw ←definable_yoneda at hφ,
+  have d : def_set S (pfun.dom (f ∘ φ)),
+  { suffices : def_set S {k : K | ∃ z : Z, z ∈ f (φ k)},
+    { convert this,
+      ext k,
+      simp [pfun.mem_dom] },
+    apply def_set.exists,
+    let ψ : K × Z → X × Z := λ p, (φ p.1, p.2),
+    have dψ : definable S ψ,
+    -- TODO: The tactic mode should be overkill for this
+    begin [defin]
+      intro p,
+      app, app, exact definable.prod_mk.definable _,
+      app, exact hφ.definable _,
+      app, exact definable.fst.definable _,
+      var,
+      app, exact definable.snd.definable _,
+      var,
+    end,
+    exact definable_iff_def_set.mp (df.comp dψ) },
+  refine ⟨d, _⟩,
+  apply definable_of_graph,
+  let ψ : pfun.dom (f ∘ φ) × Z → X × Z := λ p, (φ p.1.val, p.2),
+  have dψ : definable S ψ,
+  begin [defin]                 -- TODO: ... and this
+    intro p,
+    app, app, exact definable.prod_mk.definable _,
+    app, exact hφ.definable _,
+    app, exact definable.subtype.val.definable _,
+    app, exact definable.fst.definable _,
+    var,
+    app, exact definable.snd.definable _,
+    var,
+  end,
+  convert df.comp dψ,
+  ext ⟨⟨k, h⟩, z⟩,
+  change (f (φ k)).get _ = z ↔ z ∈ f (φ k),
+  rw [roption.get_eq_iff_eq_some, roption.eq_some_iff]
 end
 
 end o_minimal
