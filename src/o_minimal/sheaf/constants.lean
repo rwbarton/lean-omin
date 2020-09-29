@@ -174,20 +174,7 @@ end
 
 -- Quantification over X is not definable in general.
 -- Needs a special property of X: "quasicompactness"?
-
-/-
-lemma definable.subset : definable S ((⊆) : set X → set X → Prop) :=
-begin [defin]
-  intro s,
-  intro t,
-end
-
-lemma definable.powerset : definable S (set.powerset : set X → set (set X)) :=
-begin [defin]
-  intro s,
-  intro t,
-end
--/
+-- See `quantifiers` (for now, just over representables)
 
 instance subtype.definable_sheaf {s : set X} : definable_sheaf S s :=
 { definable := λ K f, definable_sheaf.definable (subtype.val ∘ f),
