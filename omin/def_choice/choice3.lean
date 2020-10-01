@@ -2,6 +2,7 @@ import algebra.module.ordered
 import order.conditionally_complete_lattice
 import o_minimal.sheaf.pfun
 import o_minimal.sheaf.quantifiers
+import .order
 import ..oqm
 -- import ..tame
 
@@ -202,26 +203,6 @@ begin
   end
 end
 
-lemma definable_Ioo : definable S (set.Ioo : R → R → set R) :=
-begin [defin]
-  intro a,
-  intro b,
-  intro x,
-  app, app, exact definable.and.definable _,
-  { app, app, exact (definable_iff_def_rel₂.mpr definable_lt').definable _,
-    var, var },
-  { app, app, exact (definable_iff_def_rel₂.mpr definable_lt').definable _,
-    var, var }
-end
-
-lemma definable_Iio : definable S (set.Iio : R → set R) :=
-begin [defin]
-  intro b,
-  intro x,
-  app, app, exact (definable_iff_def_rel₂.mpr definable_lt').definable _,
-  var, var
-end
-
 -- TODO: "generalize" core library's `guard` to return `punit`?
 -- TODO: super hack: we return 0 (ignored) instead of `punit`
 -- just to be able to use `def_pfun_set.bind` in its current form;
@@ -260,7 +241,7 @@ begin
   end
 end
 
-lemma def_chosen_one : definable S (chosen_one : set R →. R) :=
+lemma definable_chosen_one : definable S (chosen_one : set R →. R) :=
 begin
   unfold chosen_one,
   simp only [sub_eq_add_neg],

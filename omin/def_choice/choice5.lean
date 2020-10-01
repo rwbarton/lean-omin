@@ -1,3 +1,4 @@
+import o_minimal.sheaf.yoneda
 import .choice3
 import .choice4
 
@@ -25,10 +26,26 @@ begin
       exact ⟨x, h⟩ } },
   refine ⟨λ y, (chosen_one {r | (y, r) ∈ s}).get (ne y), _, _⟩,
   { unfold def_fun,
-    convert def_chosen_one.def_graph s ds,
-    ext p,
-    rw roption.mem_eq,
-    tauto },
+    suffices : def_set S
+      {p : Y × R | p.snd ∈ chosen_one {r : R | (p.fst, r) ∈ s}},
+    { convert this,
+      ext p,
+      rw roption.mem_eq,
+      tauto },
+    letI : definable_sheaf S Y := definable_sheaf.rep,
+    letI : definable_rep S Y := ⟨λ _ _, iff.rfl⟩,
+    rw ←definable_iff_def_set,
+    begin [defin]
+      intro p,
+      app, app, exact definable_roption.mem.definable _,
+      { app, exact definable.snd.definable _, var },
+      { app, exact definable_chosen_one.definable _,
+        intro r,
+        app, app, exact definable.mem.definable _,
+        app, app, exact definable.prod_mk.definable _,
+        app, exact definable.fst.definable _, var, var,
+        exact (definable_iff_def_set.mpr ds).definable _ }
+    end },
   { intro y,
     let X := {r | (y, r) ∈ s},
     have nX : X.nonempty := ne y,
