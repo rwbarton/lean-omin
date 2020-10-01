@@ -54,10 +54,59 @@ instance roption.definable_sheaf : definable_sheaf S (roption X) :=
     exact definable.snd.comp definable.subtype.val
   end }
 
--- TODO: definable (∈)? but it needs a separatedness hypothesis on X
-/-lemma definable_roption.mem : definable S ((∈) : X → roption X → Prop) :=
+-- TODO: move this, and generalize?
+lemma definable_eq {Z : Type*} [has_coordinates R Z] [definable_rep S Z] :
+  definable S ((=) : Z → Z → Prop) :=
 begin
-end-/
+  rw definable_iff_uncurry,
+  rw definable_fun,
+  intros K φ hφ,
+  rw definable_rep.eq at hφ,
+  exact def_set_eq (def_fun.fst.comp hφ) (def_fun.snd.comp hφ)
+end
+
+-- TODO: generalize to `Z` with definable equality?
+lemma definable_roption.mem {Z : Type*} [has_coordinates R Z] [definable_rep S Z] :
+  definable S ((∈) : Z → roption Z → Prop) :=
+begin
+  rw definable_iff_uncurry,
+  rw definable_fun,
+  intros K φ hφ,
+  let K' := {k | (φ k).2.dom},
+  have dK' : def_set S {k : ↥K | (φ k).snd.dom} := hφ.2.fst,
+  letI : definable_rep S K' :=
+    subtype.definable_rep (definable_iff_def_set.mpr dK'),
+  have : definable S (λ (k' : {k | (φ k).2.dom}), (φ k'.val).1 = (φ k'.val).2.get k'.property),
+  { let ψ₁ : K' → Z := λ k', (φ k'.val).1,
+    have dψ₁ : definable S ψ₁ :=
+      (definable_yoneda.mpr hφ.1).comp definable.subtype.val,
+    let ψ₂ : K' → Z := λ k', (φ k'.val).2.get k'.property,
+    have dψ₂ : definable S ψ₂ := hφ.2.snd,
+    let ψ : K' → Z × Z := λ k', (ψ₁ k', ψ₂ k'),
+    suffices dψ : definable S ψ,
+    { have : definable S (λ (p : Z × Z), p.1 = p.2) :=
+        definable_iff_uncurry.mp definable_eq,
+      exact this.comp dψ },
+    -- TODO: lemma
+    begin [defin]
+      intro k,
+      app, app, exact definable.prod_mk.definable _,
+      app, exact dψ₁.definable _, var,
+      app, exact dψ₂.definable _, var
+    end },
+  rw definable_iff_def_set at this,
+  convert def_fun.image def_fun_subtype_val this,
+  { ext k,
+    rw set.mem_image,
+    conv_lhs { rw set.mem_def },
+    simp only [function.uncurry, roption.mem_eq, exists_and_distrib_right,
+      function.comp_app, exists_eq_right, subtype.exists,
+      subtype.coe_mk, subtype.val_eq_coe],
+    apply exists_congr, intro h,
+    apply eq_comm },
+  -- TODO: avoid this side goal somehow
+  { exact dK' }
+end
 
 lemma definable_roption.dom : definable S (roption.dom : roption X → Prop) :=
 begin
