@@ -212,8 +212,8 @@ end
 def zero_when_nonempty : set R →. R :=
 λ X, { dom := X.nonempty, get := λ _, (0 : R) }
 
-noncomputable def chosen_one : set R →. R := λ X,
-zero_when_nonempty X >>* λ _,
+noncomputable def chosen_one : set R → R :=
+λ X,
 the_least X <||
 (the_inf X >>* λ a,
   (the_sup {b | a < b ∧ set.Ioo a b ⊆ X} >>* λ b, ½ • (a + b)) <||
@@ -221,8 +221,8 @@ the_least X <||
 (the_sup {b | set.Iio b ⊆ X} >>* λ b, b - 1) <||
 0
 
-lemma dom_chosen_one : (chosen_one : set R →. R).dom = set.nonempty :=
-rfl
+-- lemma dom_chosen_one : (chosen_one : set R →. R).dom = set.nonempty :=
+-- rfl
 
 lemma def_zero_when_nonempty : definable S (zero_when_nonempty : set R →. R) :=
 begin
@@ -240,15 +240,15 @@ begin
   end
 end
 
-lemma definable_chosen_one : definable S (chosen_one : set R →. R) :=
+lemma definable_chosen_one : definable S (chosen_one : set R → R) :=
 begin
   unfold chosen_one,
   simp only [sub_eq_add_neg],
   begin [defin]
     intro X,
-    app, app, exact definable_roption_map.definable _, swap,
-    app, exact def_zero_when_nonempty.definable _, var,
-    intro r,
+    -- app, app, exact definable_roption_map.definable _, swap,
+    -- app, exact def_zero_when_nonempty.definable _, var,
+    -- intro r,
     app, app, exact definable_orelse_pure.definable _,
     { app, exact def_the_least.definable _, var },
     app, app, exact definable_orelse_pure.definable _,

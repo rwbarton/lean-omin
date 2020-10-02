@@ -39,7 +39,7 @@ lemma one_pos : (0 : R) < 1 :=
 classical.some_spec _
 
 lemma chosen_one_mem (nX : X.nonempty) (tX : tame X) :
-  (chosen_one X).get nX ∈ X :=
+  (chosen_one X) ∈ X :=
 begin
   -- Administrative nonsense; also handle the trivial "has least" case.
   dsimp [chosen_one, roption.map, roption.orelse_pure, function.comp],
