@@ -221,8 +221,18 @@ the_least X <||
 (the_sup {b | set.Iio b ⊆ X} >>* λ b, b - 1) <||
 0
 
--- lemma dom_chosen_one : (chosen_one : set R →. R).dom = set.nonempty :=
--- rfl
+open_locale classical
+
+lemma nonempty_of_not_tame {s : set R} (h : ¬ tame s) : s.nonempty :=
+begin
+  rw ← set.ne_empty_iff_nonempty,
+  contrapose! h,
+  subst s,
+  exact tame_empty
+end
+
+noncomputable def chosen_one' : set R → R :=
+λ X, if h : tame X then chosen_one X else classical.some (nonempty_of_not_tame h)
 
 lemma def_zero_when_nonempty : definable S (zero_when_nonempty : set R →. R) :=
 begin

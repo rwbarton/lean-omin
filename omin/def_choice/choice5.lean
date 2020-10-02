@@ -84,10 +84,10 @@ begin
     { have : y ∈ prod.fst '' s := by { rw h, trivial },
       obtain ⟨⟨y', x⟩, h, rfl⟩ := this,
       exact ⟨x, h⟩ } },
+    intro x,
+  apply chosen_one_mem (ne x),
+  apply tame_of_def S,
   begin [defin]
-    -- intro x,
-  -- apply chosen_one_mem (ne x),
-  -- apply tame_of_def S,
   -- rw ← definable_iff_def_set,
   -- begin [defin]
     -- intro r,
