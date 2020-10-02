@@ -120,11 +120,13 @@ lemma definable_choice_1' {s : set (X × R)} (ds : definable S s) (h : prod.fst 
   ∃ g : X → R, definable S g ∧ ∀ x, (x, g x) ∈ s :=
 ⟨chosen_1 s, definable_chosen_1 ds, chosen_1_mem s h⟩
 
--- new proof of `definable_choice_1`
-example {s : set (Y × R)} (ds : def_set S s) (h : prod.fst '' s = set.univ) :
+-- new proof of `definable_choice_1` using `definable_rep` instead of `is_definable`
+example {Y : Type*} [has_coordinates R Y] [definable_rep S Y]
+  {s : set (Y × R)} (ds : def_set S s) (h : prod.fst '' s = set.univ) :
   ∃ g : Y → R, def_fun S g ∧ ∀ y, (y, g y) ∈ s :=
 begin
   refine ⟨chosen_1 s, _, chosen_1_mem s h⟩,
-  letI : definable_sheaf S Y := definable_sheaf.rep,
-  sorry
+  rw ← definable_iff_def_set at ds,
+  rw ← definable_iff_def_fun,
+  exact definable_chosen_1 ds
 end
