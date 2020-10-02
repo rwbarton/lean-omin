@@ -95,20 +95,36 @@ begin
   rwa definable_iff_def_set at hs
 end
 
+noncomputable
+def chosen_1 (s : set (X × R)) : X → R := chosen_one' ∘ (fibre_1 s)
+
+lemma chosen_1_mem (s : set (X × R)) (h : prod.fst '' s = set.univ) (x : X) : (x, chosen_1 s x) ∈ s :=
+begin
+  suffices ne : ∀ x, set.nonempty {r | (x, r) ∈ s},
+  by exact chosen_one'_mem (ne x),
+  intro x,
+  change ∃ r, (x, r) ∈ s,
+  obtain ⟨⟨x', x⟩, h, rfl⟩ : x ∈ prod.fst '' s := by { rw h, trivial },
+  exact ⟨x, h⟩
+end
+
+lemma definable_chosen_1 {s : set (X × R)} (ds : definable S s) : definable S (chosen_1 s) :=
+begin [defin]
+  intro x,
+  app, exact definable_chosen_one'.definable _,
+  app, exact (definable_fibre_1 ds).definable _,
+  var
+end
+
 lemma definable_choice_1' {s : set (X × R)} (ds : definable S s) (h : prod.fst '' s = set.univ) :
   ∃ g : X → R, definable S g ∧ ∀ x, (x, g x) ∈ s :=
+⟨chosen_1 s, definable_chosen_1 ds, chosen_1_mem s h⟩
+
+-- new proof of `definable_choice_1`
+example {s : set (Y × R)} (ds : def_set S s) (h : prod.fst '' s = set.univ) :
+  ∃ g : Y → R, def_fun S g ∧ ∀ y, (y, g y) ∈ s :=
 begin
-  have ne : ∀ y, set.nonempty {r | (y, r) ∈ s},
-  { intro y,
-    change ∃ r, (y, r) ∈ s,
-    { have : y ∈ prod.fst '' s := by { rw h, trivial },
-      obtain ⟨⟨y', x⟩, h, rfl⟩ := this,
-      exact ⟨x, h⟩ } },
-  refine ⟨chosen_one' ∘ (fibre_1 s), _, λ x, chosen_one'_mem (ne x)⟩,
-  begin [defin]
-    intro x,
-    app, exact definable_chosen_one'.definable _,
-    app, exact (definable_fibre_1 ds).definable _,
-    var
-  end,
+  refine ⟨chosen_1 s, _, chosen_1_mem s h⟩,
+  letI : definable_sheaf S Y := definable_sheaf.rep,
+  sorry
 end
