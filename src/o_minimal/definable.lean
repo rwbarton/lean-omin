@@ -116,6 +116,13 @@ by { rw compl_eq_univ_diff, exact (def_set_univ _).diff hs }
 lemma def_set.compl' {s : set X} (hs : def_set S sᶜ) : def_set S s :=
 by { rw ←compl_compl s, exact hs.compl }
 
+lemma def_set.iff {s t : set X} (hs : def_set S s) (ht : def_set S t) :
+  def_set S {x : X | x ∈ s ↔ x ∈ t} :=
+begin
+  simp only [iff_iff_and_or_not_and_not],
+  exact (hs.inter ht).union (hs.compl.inter ht.compl)
+end
+
 lemma def_set_Inter {ι : Type*} [fintype ι] {t : ι → set X}
   (ht : ∀ i, def_set S (t i)) : def_set S (⋂ i, t i) :=
 suffices ∀ {s : set ι}, set.finite s → def_set S (⋂ i ∈ s, t i),

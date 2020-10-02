@@ -55,6 +55,30 @@ begin [defin]
   app, app, exact definable.mem.definable _, var, var
 end
 
+lemma definable_sheaf.eq {Γ : Def S} :
+  definable_sheaf.definable (λ _ : Γ, @eq X) :=
+begin
+  intros K φ hφ L ψ hψ,
+  rw ← definable_yoneda at hφ hψ ⊢,
+  rw definable_iff_def_set,
+  apply def_set_eq;
+  rw ← definable_iff_def_fun,
+  begin [defin]
+    intro x,
+    app, exact definable.snd.definable _,
+    app, exact hφ.definable _,
+    app, exact definable.fst.definable _,
+    app, exact hψ.definable _,
+    var,
+  end,
+  begin [defin]
+    intro x,
+    app, exact definable.snd.definable _,
+    app, exact hψ.definable _,
+    var,
+  end
+end
+
 end o_minimal
 
 namespace defin.interactive

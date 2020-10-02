@@ -114,6 +114,13 @@ begin [defin]
   exact def_set.compl p.definable
 end
 
+lemma definable.iff : definable S iff :=
+begin [defin]
+  intro p,
+  intro q,
+  exact def_set.iff p.definable q.definable
+end
+
 instance set.definable_sheaf : definable_sheaf S (set X) :=
 show definable_sheaf S (X → Prop), by apply_instance
 

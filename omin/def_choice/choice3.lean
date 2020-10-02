@@ -229,14 +229,13 @@ begin
   apply definable_pfun_of_graph,
   change definable S {p : set R × R | ∃ (H : p.1.nonempty), 0 = p.2},
   simp_rw exists_prop,
-  have z : definable S (λ (r : R), 0 = r) :=
-    definable_iff_def_set.mpr (def_set_eq def_fun_const def_fun.id),
   begin [defin]
     intro p,
     app, app, exact definable.and.definable _,
     { app, exact definable_nonempty.definable _,
       app, exact definable.fst.definable _, var },
-    { app, exact z.definable _,
+    { app, app, swap, exact def_fun_const,
+      exact definable_sheaf.eq,
       app, exact definable.snd.definable _, var }
   end
 end
