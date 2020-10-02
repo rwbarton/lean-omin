@@ -105,3 +105,11 @@ begin
     apply hb₁ hb₂ }
 end
 
+lemma chosen_one'_mem (nX : X.nonempty) :
+  (chosen_one' X) ∈ X :=
+begin
+  unfold chosen_one',
+  split_ifs with h,
+  { exact chosen_one_mem nX h },
+  { exact classical.some_spec nX }
+end

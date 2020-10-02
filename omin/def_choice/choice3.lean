@@ -256,9 +256,6 @@ begin
   simp only [sub_eq_add_neg],
   begin [defin]
     intro X,
-    -- app, app, exact definable_roption_map.definable _, swap,
-    -- app, exact def_zero_when_nonempty.definable _, var,
-    -- intro r,
     app, app, exact definable_orelse_pure.definable _,
     { app, exact def_the_least.definable _, var },
     app, app, exact definable_orelse_pure.definable _,
