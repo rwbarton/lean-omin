@@ -8,8 +8,49 @@ universe u
 
 variables {R : Type u} [OQM R] {S : struc R} [o_minimal_add S]
 
+section
+
+variables {X Y : Type*} [definable_sheaf S X] [definable_sheaf S Y]
+
+noncomputable
+def chosen_n_aux : Π {n : ℕ} (s : set (Y × finvec n R)) (h : prod.fst '' s = set.univ) (y : Y),
+  {v : finvec n R // (y, v) ∈ s}
+| 0     s h y := ⟨fin_zero_elim, by { obtain ⟨⟨y', z⟩, h, rfl⟩ : y ∈ prod.fst '' s, by { rw h, trivial }, convert h }⟩
+| (n+1) s h y :=
+let π : Y × finvec (n+1) R → Y × finvec n R := λ p, (p.1, finvec.init p.2),
+    t : set (Y × finvec n R)                := π '' s,
+    i : t × R → Y × finvec (n+1) R          := λ p, (p.fst.val.fst, p.fst.val.snd.snoc p.snd),
+    s' : set (t × R)                        := i ⁻¹' s
+in  have prod.fst '' t = set.univ,
+    { have : (prod.fst : Y × finvec (n+1) R → Y) = (prod.fst : Y × finvec n R → Y) ∘ π,
+      { ext ⟨_, _⟩, refl },
+      rwa [this, set.image_comp] at h },
+let v : {v // (y, v) ∈ t} := (chosen_n_aux t this y),
+    x : ↥t := ⟨(y, v), v.2⟩ in
+⟨finvec.snoc v.1 (chosen_1 s' x),
+begin
+  apply chosen_1_mem s' _ x,
+  { -- TODO: is this right? probably an easier way
+    apply set.eq_univ_of_forall,
+    rintro ⟨_, ⟨⟨y, r⟩, h, rfl⟩⟩,
+    refine ⟨(⟨(y, fin.init r), ⟨(y, r), h, rfl⟩⟩, r (fin.last n)), _, rfl⟩,
+    { change (y, _) ∈ s,
+      convert h,
+      rw finvec.snoc_eq_append,
+      convert finvec.left_append_right r,
+      ext j,
+      fin_cases j,
+      simp [finvec.right],
+      refl } },
+end⟩
+
+end
+
+section
+
 variables {X : Type u} [has_coordinates R X] [is_definable S X]
 variables {Y : Type u} [has_coordinates R Y] [is_definable S Y]
+
 
 -- Inductive argument: definable choice for projections s ⊆ Y × Rⁿ → Y.
 lemma definable_choice_n {n : ℕ} {s : set (Y × finvec n R)} (hs : def_set S s)
@@ -87,4 +128,6 @@ begin
     apply def_fun.cancel def_fun.coords (injective_coords _),
     convert hg'₁ },
   { ext y, have := hg₂ y, dsimp only [j] at this, dsimp only [(∘), id], cc }
+end
+
 end

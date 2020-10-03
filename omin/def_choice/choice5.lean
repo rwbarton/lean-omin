@@ -96,6 +96,64 @@ begin
 end
 
 noncomputable
+def chosen_n' : Π {n : ℕ}, set (finvec n R) → finvec n R
+| 0     s := fin_zero_elim
+| (n+1) s :=
+let t : set (finvec n R) := finvec.init '' s,
+    a : finvec n R       := chosen_n' t,
+    X : set R            := {r | a.snoc r ∈ s}
+in a.snoc (chosen_one' X)
+
+lemma chosen_n'_mem : ∀ {n : ℕ} {s : set (finvec n R)} (hs : s.nonempty), chosen_n' s ∈ s
+| 0     s hs := by { obtain ⟨x, hx⟩ := hs, convert hx }
+| (n+1) s hs :=
+let t : set (finvec n R) := finvec.init '' s,
+    a : finvec n R       := chosen_n' t,
+    X : set R            := {r | a.snoc r ∈ s}
+in
+begin
+  have ht : t.nonempty, by { rwa set.nonempty_image_iff },
+  have hat : a ∈ t := chosen_n'_mem ht,
+  have hX : X.nonempty,
+  { obtain ⟨v, hv, H⟩ := hat, rw [← finvec.init_snoc_last v, H] at hv, exact ⟨v.last, hv⟩ },
+  have := chosen_one'_mem hX,
+  rwa [chosen_n']
+end
+
+instance (n : ℕ) : definable_sheaf S (finvec n R) :=
+definable_sheaf.rep
+
+instance (n : ℕ) : definable_rep S (finvec n R) :=
+⟨λ _ _, iff.rfl⟩
+
+lemma definable_chosen_n' : ∀ (n : ℕ), definable S (chosen_n' : set (finvec n R) → finvec n R)
+| 0     :=
+begin [defin]
+  intro s,
+  exact (show definable_sheaf.definable (λ (i : ↥Γ), fin_zero_elim), by exact def_fun_const)
+end
+| (n+1) :=
+begin
+  show (definable S (λ s, chosen_n' s)),
+  conv { congr, funext, rw [chosen_n'] },
+  dsimp [set_of],
+begin [defin]
+  intro s,
+  app, app, exact sorry,
+  app, exact (definable_chosen_n' n).definable _,
+  app, app, exact sorry, exact sorry,
+  var,
+  app, exact definable_chosen_one'.definable _,
+  intro r,
+  app, app, exact definable.mem.definable _,
+  app, app, exact sorry,
+  app, exact (definable_chosen_n' n).definable _,
+  app, app, exact sorry, exact sorry,
+  var, var, var,
+  end
+end
+
+noncomputable
 def chosen_1 (s : set (X × R)) : X → R := chosen_one' ∘ (fibre_1 s)
 
 lemma chosen_1_mem (s : set (X × R)) (h : prod.fst '' s = set.univ) (x : X) : (x, chosen_1 s x) ∈ s :=
