@@ -183,14 +183,14 @@ end
 -- Needs a special property of X: "quasicompactness"?
 -- See `quantifiers` (for now, just over representables)
 
-instance subtype.definable_sheaf {s : set X} : definable_sheaf S s :=
+instance set.coe.definable_sheaf {s : set X} : definable_sheaf S s :=
 { definable := λ K f, definable_sheaf.definable (subtype.val ∘ f),
   definable_precomp := λ L K φ f hf,
     definable_sheaf.definable_precomp φ (subtype.val ∘ f) hf,
   definable_cover := λ K f 𝓛 hf,
     definable_sheaf.definable_cover (subtype.val ∘ f) 𝓛 hf }
 
-instance {p : X → Prop} : definable_sheaf S {x // p x} :=
+instance subtype.definable_sheaf {p : X → Prop} : definable_sheaf S {x // p x} :=
 show definable_sheaf S (set_of p), by apply_instance
 
 -- instance prop.definable_sheaf {p : Prop} : definable_sheaf S p := sorry

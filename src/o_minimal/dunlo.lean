@@ -10,8 +10,7 @@ set_option old_structure_cmd true
 This is the setting in which we can talk about o-minimal structures.
 See [vdD], §1.3, first italicized paragraph.
 -/
--- Remark: We use `decidable_linear_order` in order to have access to `⊔`, `finset.max`, etc.
-class DUNLO (R : Type*) extends decidable_linear_order R :=
+class DUNLO (R : Type*) extends linear_order R :=
 [dense : densely_ordered R]
 [unbounded_below : no_bot_order R]
 [unbounded_above : no_top_order R]
@@ -21,7 +20,7 @@ class DUNLO (R : Type*) extends decidable_linear_order R :=
 attribute [instance] DUNLO.dense DUNLO.unbounded_below DUNLO.unbounded_above DUNLO.nonempty
 
 instance : DUNLO ℚ :=
-{ .. show decidable_linear_order ℚ, by apply_instance }
+{ .. show linear_order ℚ, by apply_instance }
 
 -- TODO: for_mathlib
 /-- In a DUNLO, a system of constraints Lᵢ < x, x < Uⱼ is solvable
@@ -56,7 +55,7 @@ begin
       exact ⟨x, λ g H, lt_of_le_of_lt (le_lmax g H) hx⟩ },
     { intro Hgh,
       specialize Hgh lmax (finset.mem_of_max hlower) umin (finset.mem_of_min hupper),
-      obtain ⟨x, hx₁, hx₂⟩ := dense Hgh,
+      obtain ⟨x, hx₁, hx₂⟩ := exists_between Hgh,
       exact ⟨x,
         λ g H, lt_of_le_of_lt (le_lmax g H) hx₁,
         λ h H, lt_of_lt_of_le hx₂ (umin_le h H)⟩ } }

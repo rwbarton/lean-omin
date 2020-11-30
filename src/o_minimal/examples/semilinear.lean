@@ -19,14 +19,10 @@ form an isolating family, which defines the o-minimal structure of semilinear se
 -/
 
 variables (K R : Type u)
-variables [linear_ordered_field K] [ordered_add_comm_group R] [ordered_semimodule K R]
+variables [linear_ordered_field K] [ordered_add_comm_group R]
+  [semimodule K R] [ordered_semimodule K R]
 
 section semilinear
-
--- some thing is wrong here
-instance foo (α : Type*) : semimodule K (α → R) :=
-@pi.semimodule α (λ i, R) K _ _
-(λ i, by { dsimp, apply @ordered_semimodule.to_semimodule K R _, })
 
 def semilinear_function_type (n : ℕ) : submodule K (finvec n R → R) :=
 { carrier := {f | ∃ (k : fin n → K) (r : R), f = λ x, ∑ i, k i • x i + r},
@@ -202,10 +198,10 @@ end
 
 end semilinear
 
-variables (K' : Type u) [discrete_linear_ordered_field K']
+variables (K' : Type u) [linear_ordered_field K']
 
 instance discrete_linear_ordered_field.DUNLO : DUNLO K' :=
-{ .. ‹discrete_linear_ordered_field K'› }
+{ .. ‹linear_ordered_field K'› }
 
 def semilinear : struc K' :=
 struc_of_isolating' (semilinear_function_family_is_isolating K')

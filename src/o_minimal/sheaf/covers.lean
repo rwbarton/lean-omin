@@ -118,8 +118,8 @@ def sep_cover (s : set X) (ds : definable S s) : cover S X :=
   jointly_surjective := begin
     intro x,
     by_cases hx : x ∈ s,
-    { refine ⟨0, ⟨x, hx⟩, rfl⟩ },
-    { refine ⟨1, ⟨x, hx⟩, rfl⟩ }
+    { refine ⟨0, by exact ⟨x, hx⟩, by exact rfl⟩ },
+    { refine ⟨1, by exact ⟨x, hx⟩, by exact rfl⟩ }
   end }
 
 -- TODO: is this true for any sheaf X?

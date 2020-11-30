@@ -37,12 +37,47 @@ instance (X : Type u) [psh C X] : concrete_category.{u} (slice C X) :=
 -- This improved things a bit. We can now encode the map (Σ Y) → X
 -- as an object of the presheaf category on C/X.
 -- But where would we actually get the instance?
-instance pi {X : Type u} [psh C X] {Y : X → Type u} [psh (slice C X) (Σ x, Y x)] :
+instance pi.psh {X : Type u} [psh C X] {Y : X → Type u} [psh (slice C X) (Σ x, Y x)] :
   psh C (Π (x : X), Y x) :=
+sorry
+
+/-
+instance sigma.psh {X : Type u} [psh C X] {Y : X → Type u} [psh (slice C X) (Σ x, Y x)] :
+  psh C (sigma Y) :=
+sorry
+-/
+
+instance pi₂.psh {X : Type u} [psh C X] {Y : X → Type u} [psh (slice C X) (Σ x, Y x)]
+  {Z : Π x, Y x → Type u} [psh (slice C (sigma Y)) (Σ (p : sigma Y), Z p.1 p.2)] :
+  psh (slice C X) (Σ x, Π y, Z x y) :=
 sorry
 
 -- Vague idea: instances for `psh (slice C X)` are expected to be of the form
 -- `Σ x, ...`? Will this let us handle multiple `Σ x y, ...` cleanly?
+
+variables
+  {X : Type u} [psh C X]
+  {Y : X → Type u} [psh (slice C X) (sigma Y)]
+  {Z : Π x, Y x → Type u} [psh (slice (slice C X) (sigma Y)) (Σ x y, Z x y)]
+--{W : Π x y, Z x y → Type u} [psh (slice (slice (slice C X) (sigma Y)) _) (Σ x y z, W x y z)]
+
+--set_option trace.class_instances true
+--#check (show psh C (Π (x : X) (y : Y x), Z x y), by apply_instance)
+
+-- Is there a better plan than creating a separate type class to represent
+-- definability of type families with n free variables, for each metatheoretic
+-- natural number n?
+-- Annoying because every instance will also have to be duplicated in
+-- each context length...
+
+-- What we want is something like a "type class class":
+--   Type* ↦ definable_psh
+--   (X → Type*) ↦ definable_fam
+-- in general, if α ↦ C, then (Y → α) ↦ C' derived somehow from C ...
+
+/-
+class definable_thing (β : Type*) [has_definable_thingy β] (X : β) := ...?
+-/
 
 -- Also, we've now fixed the universe of X to Type u, which is somewhat okay
 -- but going to be annoying mainly for Prop, and to some extent things like ℕ

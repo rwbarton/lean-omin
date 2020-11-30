@@ -23,7 +23,7 @@ variables {S}
 instance : has_coe_to_sort (Def S) :=
 ⟨Type u, λ X, X.to_set⟩
 
-instance (K : Def S) : is_definable S K :=
+instance is_definable.Def (K : Def S) : is_definable S K :=
 is_definable.subtype K.is_definable
 
 @[ext] structure Hom (X Y : Def S) : Type u :=

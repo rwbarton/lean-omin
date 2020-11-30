@@ -121,7 +121,7 @@ congr_arg prod.snd (append_equiv.apply_symm_apply (x, y) : _)
 
 lemma prod_ext {z z' : finvec (n + m) α} :
   z = z' ↔ z.left = z'.left ∧ z.right = z'.right :=
-(append_equiv.apply_eq_iff_eq z z').symm.trans prod.mk.inj_iff
+append_equiv.apply_eq_iff_eq.symm.trans prod.mk.inj_iff
 
 lemma append.inj_iff {x x' : finvec n α} {y y' : finvec m α} :
   x ++ y = x' ++ y' ↔ x = x' ∧ y = y' :=
