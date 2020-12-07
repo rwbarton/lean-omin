@@ -251,11 +251,11 @@ end
 
 lemma def_set.prod_univ {s : set X} (hs : def_set S s) :
   def_set S {p : X × Y | p.1 ∈ s} :=
-def_set.reindex (is_reindexing.fst R) hs
+def_set.reindex is_reindexing.fst hs
 
 lemma def_set.univ_prod {t : set Y} (ht : def_set S t) :
   def_set S {p : X × Y | p.2 ∈ t} :=
-def_set.reindex (is_reindexing.snd R) ht
+def_set.reindex is_reindexing.snd ht
 
 lemma def_set.prod {s : set X} (hs : def_set S s) {t : set Y} (ht : def_set S t) :
   def_set S (s.prod t) :=
@@ -334,19 +334,19 @@ begin
 end
 
 lemma def_fun.coords : def_fun S (λ x : X, coords R x) :=
-is_reindexing.def_fun (is_reindexing.coords R)
+is_reindexing.def_fun is_reindexing.coords
 
 lemma def_fun.coord (i : fin (has_coordinates.ambdim R X)) : def_fun S (λ x : X, coords R x i) :=
-is_reindexing.def_fun (is_reindexing.coord R i)
+is_reindexing.def_fun (is_reindexing.coord i)
 
 lemma def_fun.coord_rn {n : ℕ} (i : fin n) : def_fun S (λ x : finvec n R, x i) :=
 def_fun.coord i
 
 lemma def_fun.fst : def_fun S (prod.fst : X × Y → X) :=
-is_reindexing.def_fun (is_reindexing.fst R)
+is_reindexing.def_fun is_reindexing.fst
 
 lemma def_fun.snd : def_fun S (prod.snd : X × Y → Y) :=
-is_reindexing.def_fun (is_reindexing.snd R)
+is_reindexing.def_fun is_reindexing.snd
 
 lemma def_fun.prod' {f : X → Y} {g : X → Z} (hf : def_fun S f) (hg : def_fun S g) :
   def_fun S (λ x, (f x, g x)) :=
@@ -355,13 +355,11 @@ begin
   let p1 : X × (Y × Z) → X × Y := λ p, (p.1, p.2.1),
   have hp1 : def_fun S p1,
   { apply is_reindexing.def_fun,
-    apply (is_reindexing.fst R).prod R
-      ((is_reindexing.fst R).comp R (is_reindexing.snd R)) },
+    apply is_reindexing.fst.prod (is_reindexing.fst.comp is_reindexing.snd) },
   let p2 : X × (Y × Z) → X × Z := λ p, (p.1, p.2.2),
   have hp2 : def_fun S p2,
   { apply is_reindexing.def_fun,
-    apply (is_reindexing.fst R).prod R
-      ((is_reindexing.snd R).comp R (is_reindexing.snd R)) },
+    apply is_reindexing.fst.prod (is_reindexing.snd.comp is_reindexing.snd) },
   convert (hp1.preimage hf).inter (hp2.preimage hg),
   ext ⟨x,y,z⟩,
   show (f x, g x) = (y,z) ↔ _,
@@ -376,19 +374,19 @@ lemma def_fun_subtype_val {s : set X} {hs : def_set S s} :
   by haveI := is_definable.subtype hs; exact
   def_fun S (subtype.val : s → X) :=
 by haveI := is_definable.subtype hs; exact
-(is_reindexing.subtype.val R).def_fun
+is_reindexing.subtype.val.def_fun
 
 lemma def_fun.finvec.left {n m : ℕ} : def_fun S (λ x : finvec (n+m) R, x.left) :=
-(is_reindexing.finvec.left R).def_fun
+is_reindexing.finvec.left.def_fun
 
 lemma def_fun.finvec.right {n m : ℕ} : def_fun S (λ x : finvec (n+m) R, x.right) :=
-(is_reindexing.finvec.right R).def_fun
+is_reindexing.finvec.right.def_fun
 
 lemma def_fun.finvec.init {n : ℕ} : def_fun S (λ x : finvec (n+1) R, x.init) :=
-(is_reindexing.finvec.init R).def_fun
+is_reindexing.finvec.init.def_fun
 
 lemma def_fun.finvec.snoc' {n : ℕ} : def_fun S (λ p : finvec n R × R, p.1.snoc p.2) :=
-(is_reindexing.finvec.snoc R).def_fun
+is_reindexing.finvec.snoc.def_fun
 
 lemma def_fun.finvec.snoc {n : ℕ} {f : X → finvec n R} (hf : def_fun S f) {g : X → R} (hg : def_fun S g) :
   def_fun S (λ x, (f x).snoc (g x)) :=

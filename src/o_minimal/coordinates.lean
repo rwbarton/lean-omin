@@ -100,6 +100,8 @@ variables (R)
 /-- The subset of Rⁿ which is mapped onto by X. -/
 def coordinate_image (X : Type*) [cX : has_coordinates R X] := range (@coords R X _)
 
+variables {R}
+
 lemma coordinate_image_prod {X Y : Type*} [cX : has_coordinates R X] [cY : has_coordinates R Y] :
   coordinate_image R (X × Y) = coordinate_image R X ⊠ coordinate_image R Y :=
 begin
@@ -143,6 +145,8 @@ inductive is_reindexing
 | mk (σ : fin cY.ambdim → fin cX.ambdim)
      (h : ∀ x i, coords R x (σ i) = coords R (f x) i)
   : is_reindexing
+
+variables {R}
 
 lemma is_reindexing.id (X : Type*) [cX : has_coordinates R X] :
   is_reindexing R (id : X → X) :=
